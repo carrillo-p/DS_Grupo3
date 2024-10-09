@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score, roc_curve
 import xgboost as xgb

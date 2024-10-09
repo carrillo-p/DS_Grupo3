@@ -2,7 +2,7 @@ import pandas as pd
 import xgboost as xgb
 import optuna
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score
 from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import StandardScaler
 

@@ -1,2 +1,4 @@
 scaler.joblib
 xgboost_model.joblib
+nn_scaler.joblib
+nn_stroke.keras
