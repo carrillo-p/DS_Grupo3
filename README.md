@@ -1,5 +1,6 @@
-# XGBoost model
-# Resumen de la Evaluación del Modelo
+# Resumen de la evaluación de los Modelos
+
+# 1. XGBoost model
 
 ## Validación Cruzada y Ajuste de Hiperparámetros
 La evaluación del modelo empleó **validación cruzada Stratificada K-Fold** con **5 pliegues** para garantizar que la distribución de las clases objetivo se mantuviera en los conjuntos de entrenamiento y prueba. Esta técnica mejora la fiabilidad del modelo al proporcionar una evaluación más robusta de su rendimiento.
@@ -29,8 +30,11 @@ El modelo alcanzó una **precisión máxima** de **92.29%** en el conjunto de pr
 ## Matriz de Confusión
 La matriz de confusión para el conjunto de prueba es la siguiente:
 
-[[836 111]
- [ 43 903]]
+|      | Predicho 0 | Predicho 1 |
+|------|------------|------------|
+| Real 0 |    836     |    111     |
+| Real 1 |    43      |    903     |
+
  
 ## Puntuación ROC AUC
 El modelo mostró una **puntuación ROC AUC** de **0.9736**, lo que indica una excelente capacidad de discriminación entre las clases.
@@ -43,3 +47,39 @@ El análisis de la importancia de las características reveló que las más sign
 - **bmi_category_Underweight**: 0.0955
 
 Este enfoque exhaustivo demuestra la efectividad del modelo en la predicción de la variable objetivo y su potencial para aplicaciones prácticas en campos relevantes.
+
+---
+
+# 2. Redes Neuronales (NN model)
+
+## Ajuste de Hiperparámetros 
+Se usó Optuna para realizar la búsqueda y ajuste de los valores de hiperparámetros con el objetivo de maximizar la métrica de rendimiento del modelo. 
+El mejor modelo resultante de esta búsqueda de hiperparámetros alcanzó una precisión de **0.9176**. Este modelo utilizó:
+
+- **n_layers**: 3 capas.
+- **n_units**: 121 neuronas.
+- **activation**: ReLU.
+- **dropout_rate**: 0.0374.
+- **batch_size**: 45.
+- **epochs**: 50.
+
+## Rendimiento del Modelo
+El modelo alcanzó una **precisión máxima** de **91.18%** en el conjunto de prueba, con los siguientes detalles del informe de clasificación:
+
+- **Precisión**: 
+  - Clase 0: 0.93 
+  - Clase 1: 0.89
+- **Recall**: 
+  - Clase 0: 0.89 
+  - Clase 1: 0.93
+- **F1-Score**: 
+  - Clase 0: 0.91
+  - Clase 1: 0.91
+
+## Matriz de confusión:
+La matriz de confusión para el conjunto de prueba es la siguiente:
+
+|      | Predicho 0 | Predicho 1 |
+|------|------------|------------|
+| Real 0 |    842     |    104     |
+| Real 1 |     63     |    885     |
