@@ -8,7 +8,7 @@ import joblib
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('data/cleaned_dataset4.csv')
+df = pd.read_csv('data/stroke_woe_smote.csv')
 
 X = df.drop('stroke', axis=1)
 y = df['stroke'] 
@@ -34,12 +34,12 @@ for train_index, test_index in skf.split(X_scaled, y):
     
    
     model = xgb.XGBClassifier(
-        n_estimators=178,
-        learning_rate=0.05,
-        max_depth=10,
-        min_child_weight=2,
-        subsample=0.93,
-        colsample_bytree=0.72,
+        n_estimators=179,
+        learning_rate=0.07,
+        max_depth=9,
+        min_child_weight=1,
+        subsample=0.8,
+        colsample_bytree=0.92,
         random_state=42
     )
     model.fit(X_train_resampled, y_train_resampled)
@@ -74,7 +74,19 @@ for train_index, test_index in skf.split(X_scaled, y):
 
     fpr, tpr, thresholds = roc_curve(y_test, y_test_pred_proba)
 
-    
+    # Grafica la curva ROC
+    plt.figure(figsize=(8, 6))
+    plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {roc_auc:.4f})', color='darkorange', lw=2)
+    plt.plot([0, 1], [0, 1], color='navy', linestyle='--')  # Línea diagonal de referencia
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc="lower right")
+    plt.grid(True)
+    plt.show()
+        
     importance = model.feature_importances_
     importance_df = pd.DataFrame({
         'Feature': X.columns,  
@@ -92,7 +104,8 @@ for train_index, test_index in skf.split(X_scaled, y):
 
 average_accuracy = sum(accuracies) / len(accuracies)
 print(f"\nAverage Accuracy across folds: {average_accuracy:.4f}")
-
+'''
 joblib.dump(scaler, 'model/scaler.joblib')
 
 joblib.dump(model, 'model/xgboost_model.joblib')
+'''
