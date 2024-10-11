@@ -104,8 +104,7 @@ for train_index, test_index in skf.split(X_scaled, y):
 
 average_accuracy = sum(accuracies) / len(accuracies)
 print(f"\nAverage Accuracy across folds: {average_accuracy:.4f}")
-'''
-joblib.dump(scaler, 'model/scaler.joblib')
+
+joblib.dump(scaler, 'model/xgb_scaler.joblib')
 
 joblib.dump(model, 'model/xgboost_model.joblib')
-'''

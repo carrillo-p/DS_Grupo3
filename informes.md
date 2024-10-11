@@ -50,14 +50,15 @@
 
 ## Ajuste de Hiperparámetros 
 Se usó Optuna para realizar la búsqueda y ajuste de los valores de hiperparámetros con el objetivo de maximizar la métrica de rendimiento del modelo. 
-El mejor modelo resultante de esta búsqueda de hiperparámetros alcanzó una precisión de **0.9176**. Este modelo utilizó:
 
-- **n_layers**: 3 capas.
-- **n_units**: 121 neuronas.
+El mejor modelo resultante de esta búsqueda de hiperparámetros alcanzó una precisión de **0.9181**. Este modelo utilizó:
+
+- **n_layers**: 5 capas.
+- **n_units**: 834 neuronas.
 - **activation**: ReLU.
-- **dropout_rate**: 0.0374.
-- **batch_size**: 45.
-- **epochs**: 50.
+- **dropout_rate**: 0.006.
+- **batch_size**: 75.
+- **epochs**: 245.
 
 ## Rendimiento del Modelo
 El modelo alcanzó una **precisión máxima** de **91.18%** en el conjunto de prueba, con los siguientes detalles del informe de clasificación:

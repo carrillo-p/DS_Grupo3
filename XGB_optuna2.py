@@ -7,7 +7,7 @@ from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import StandardScaler
 
 
-df = pd.read_csv('data/cleaned_dataset4.csv')
+df = pd.read_csv('data/stroke_woe_smote.csv')
 
 X = df.drop('stroke', axis=1)
 y = df['stroke']
@@ -20,12 +20,12 @@ skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 def objective(trial):
     params = {
-        'n_estimators': trial.suggest_int('n_estimators', 50, 200),
+        'n_estimators': trial.suggest_int('n_estimators', 100, 500),
         'learning_rate': trial.suggest_loguniform('learning_rate', 1e-3, 0.1),
-        'max_depth': trial.suggest_int('max_depth', 3, 10),
+        'max_depth': trial.suggest_int('max_depth', 3, 15),
         'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
-        'subsample': trial.suggest_uniform('subsample', 0.5, 1.0),
-        'colsample_bytree': trial.suggest_uniform('colsample_bytree', 0.5, 1.0),
+        'subsample': trial.suggest_uniform('subsample', 0.1, 1.0),
+        'colsample_bytree': trial.suggest_uniform('colsample_bytree', 0.1, 1.0),
         'random_state': 42,
     }
 
@@ -50,7 +50,7 @@ def objective(trial):
 
 
 study = optuna.create_study(direction='maximize')  
-study.optimize(objective, n_trials=50) 
+study.optimize(objective, n_trials=100) 
 
 
 print("Best hyperparameters: ", study.best_params)
