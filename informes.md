@@ -2,52 +2,48 @@
 
 # 1. XGBoost model
 
-## Validación Cruzada y Ajuste de Hiperparámetros
-La evaluación del modelo empleó **validación cruzada Stratificada K-Fold** con **5 pliegues** para garantizar que la distribución de las clases objetivo se mantuviera en los conjuntos de entrenamiento y prueba. Esta técnica mejora la fiabilidad del modelo al proporcionar una evaluación más robusta de su rendimiento.
+# Informe de Desempeño del Modelo
 
-Para optimizar los hiperparámetros del modelo, se utilizó **Optuna**, lo que permitió realizar una búsqueda eficiente y automatizada de los mejores parámetros. Los hiperparámetros óptimos descubiertos fueron:
+## 1. Exactitud del Modelo:
+- **Conjunto de Entrenamiento**: 96.10%
+- **Conjunto de Prueba**: 95.35%
 
-- **n_estimators**: 178
-- **learning_rate**: 0.0554
-- **max_depth**: 10
-- **min_child_weight**: 2
-- **subsample**: 0.9307
-- **colsample_bytree**: 0.7241
+## 2. Informe de Clasificación para el Conjunto de Prueba:
+| Clase | Precisión | Recall | F1-Score | Soporte |
+|-------|-----------|--------|----------|---------|
+| 0     | 0.95      | 0.96   | 0.95     | 947     |
+| 1     | 0.96      | 0.95   | 0.95     | 947     |
+| **Exactitud Total** | **95.35%** |
+| **Media Macro** | 0.95      | 0.95   | 0.95     | 1894   |
+| **Media Ponderada** | 0.95      | 0.95   | 0.95     | 1894   |
 
-## Rendimiento del Modelo
-El modelo alcanzó una **precisión máxima** de **92.29%** en el conjunto de prueba, con los siguientes detalles del informe de clasificación:
+## 3. Matriz de Confusión para el Conjunto de Prueba:
+- **Clase 0** predicha correctamente: 906
+- **Clase 1** predicha correctamente: 900
+- **Falsos Positivos**: 41
+- **Falsos Negativos**: 47
 
-- **Precisión**: 
-  - Clase 0: 0.95 
-  - Clase 1: 0.90
-- **Recall**: 
-  - Clase 0: 0.89 
-  - Clase 1: 0.95
-- **F1-Score**: 
-  - Clase 0: 0.92 
-  - Clase 1: 0.92
+## 4. Puntuación ROC AUC:
+- **ROC AUC Score**: 0.9871
 
-## Matriz de Confusión
-La matriz de confusión para el conjunto de prueba es la siguiente:
+## 5. Importancia de las Características:
+| Característica               | Importancia |
+|------------------------------|-------------|
+| Edad (age_category)           | 0.450039    |
+| Tipo de trabajo (work_type)   | 0.117619    |
+| Índice de masa corporal (BMI) | 0.115807    |
+| Estado de fumador (smoking_status) | 0.112054    |
+| Nivel de glucosa (glucose_level_category) | 0.071738    |
+| Enfermedad cardíaca (heart_disease) | 0.031439    |
+| Hipertensión (hypertension)   | 0.029050    |
+| Estado civil (ever_married)   | 0.027263    |
+| Género                        | 0.024509    |
+| Tipo de residencia (Residence_type) | 0.020481    |
 
-|      | Predicho 0 | Predicho 1 |
-|------|------------|------------|
-| Real 0 |    836     |    111     |
-| Real 1 |    43      |    903     |
-
- 
-## Puntuación ROC AUC
-El modelo mostró una **puntuación ROC AUC** de **0.9736**, lo que indica una excelente capacidad de discriminación entre las clases.
-
-## Importancia de las Características
-El análisis de la importancia de las características reveló que las más significativas incluían:
-
-- **ever_married_Yes**: 0.3466
-- **age_category_Adults**: 0.1534
-- **bmi_category_Underweight**: 0.0955
-
-Este enfoque exhaustivo demuestra la efectividad del modelo en la predicción de la variable objetivo y su potencial para aplicaciones prácticas en campos relevantes.
-
+## 6. Desempeño Promedio del Modelo:
+- **Exactitud Promedio en Entrenamiento**: 96.18%
+- **Exactitud Promedio en Prueba**: 95.62%
+- **Media de Exactitud a lo largo de los pliegues**: 0.9492
 ---
 
 # 2. Redes Neuronales (NN model)
@@ -83,3 +79,36 @@ La matriz de confusión para el conjunto de prueba es la siguiente:
 |------|------------|------------|
 | Real 0 |    842     |    104     |
 | Real 1 |     63     |    885     |
+
+# 3. Lazy Classifier
+
+## Comparación de Modelos de Clasificación
+
+| Modelo                             | Precisión | Recall | F1-Score | Exactitud |
+|------------------------------------|-----------|--------|----------|-----------|
+| **BaggingClassifier**              | 0.95      | 0.95   | 0.95     | 0.95      |
+| **XGBClassifier**                  | 0.95      | 0.95   | 0.95     | 0.95      |
+| **RandomForestClassifier**         | 0.95      | 0.95   | 0.95     | 0.95      |
+| **LGBMClassifier**                 | 0.95      | 0.95   | 0.95     | 0.95      |
+| **ExtraTreesClassifier**           | 0.94      | 0.94   | 0.94     | 0.94      |
+| **DecisionTreeClassifier**         | 0.94      | 0.94   | 0.94     | 0.94      |
+| **ExtraTreeClassifier**            | 0.93      | 0.93   | 0.93     | 0.93      |
+| **KNeighborsClassifier**           | 0.88      | 0.88   | 0.88     | 0.88      |
+| **AdaBoostClassifier**             | 0.88      | 0.88   | 0.88     | 0.88      |
+| **LabelSpreading**                 | 0.84      | 0.84   | 0.84     | 0.84      |
+| **LabelPropagation**               | 0.84      | 0.84   | 0.84     | 0.84      |
+| **SVC**                            | 0.79      | 0.79   | 0.79     | 0.78      |
+| **NuSVC**                          | 0.78      | 0.78   | 0.78     | 0.78      |
+| **LogisticRegression**             | 0.75      | 0.75   | 0.75     | 0.75      |
+| **CalibratedClassifierCV**         | 0.75      | 0.75   | 0.75     | 0.75      |
+| **LinearSVC**                      | 0.75      | 0.75   | 0.75     | 0.75      |
+| **LinearDiscriminantAnalysis**     | 0.74      | 0.74   | 0.74     | 0.74      |
+| **RidgeClassifierCV**              | 0.74      | 0.74   | 0.74     | 0.74      |
+| **SGDClassifier**                  | 0.74      | 0.74   | 0.74     | 0.74      |
+| **BernoulliNB**                    | 0.72      | 0.72   | 0.72     | 0.72      |
+| **NearestCentroid**                | 0.72      | 0.72   | 0.72     | 0.71      |
+| **QuadraticDiscriminantAnalysis**  | 0.72      | 0.72   | 0.72     | 0.70      |
+| **Perceptron**                     | 0.70      | 0.70   | 0.70     | 0.70      |
+| **GaussianNB**                     | 0.69      | 0.69   | 0.69     | 0.68      |
+| **PassiveAggressiveClassifier**    | 0.69      | 0.69   | 0.69     | 0.69      |
+| **DummyClassifier**                | 0.50      | 0.50   | 0.50     | 0.33      |
