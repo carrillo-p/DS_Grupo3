@@ -50,6 +50,7 @@
 
 ## Ajuste de Hiperparámetros 
 Se usó Optuna para realizar la búsqueda y ajuste de los valores de hiperparámetros con el objetivo de maximizar la métrica de rendimiento del modelo. 
+![2024-10-11 (1)](https://github.com/user-attachments/assets/42319678-5641-4714-8efa-27e486dbb8db)
 
 El mejor modelo resultante de esta búsqueda de hiperparámetros alcanzó una precisión de **0.9181**. Este modelo utilizó:
 
