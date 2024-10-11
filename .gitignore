@@ -23,3 +23,6 @@ Thumbs.db
 reports/
 output/
 figures/
+
+#Modelos entrenados
+model/
