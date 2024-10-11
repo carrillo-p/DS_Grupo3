@@ -14,9 +14,9 @@ Este proyecto tiene como objetivo desarrollar un modelo de IA para predecir el r
 
 - **Scrum Master**: Andrea Moraleda Blanco
 
-- **Product Owner (PO)**: Lisy Velasco
+- **Product Owner (PO)**: Iryna Bilokon
 
 - **Desarrolladores**:
   - Alberto Carillo 
-  - Iryna Bilokon
+  - Lisy Velasco
    
