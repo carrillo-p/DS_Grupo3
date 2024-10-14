@@ -5,12 +5,18 @@ import numpy as np
 from src.model.train_models_XGBoost import XGBoostStrokeModel
 from screens.aux_functions import create_gauge_chart
 from database_utils import save_prediction_to_db 
+import tensorflow as tf
 
 @st.cache_resource
 def load_model():
     return XGBoostStrokeModel.load_model('src/model/xgboost_model.joblib', 'src/model/xgb_scaler.joblib')
+def load_nn_model():
+    model = tf.keras.models.load_model('src/model/nn_stroke.keras')
+    scaler = joblib.load('src/model/nn_scaler.joblib')
+    return model, scaler
 
-model = load_model()
+xgb_model = load_model()
+nn_model, nn_scaler = load_nn_model()
 
 def screen_predict():
     st.markdown("""<h1 style="text-align: center;">Predictor de Ictus</h1>""", unsafe_allow_html=True)
@@ -24,9 +30,9 @@ def screen_predict():
         hypertension = st.selectbox("Hipertensión", ["No", "Sí"])
         heart_disease = st.selectbox("Enfermedad cardíaca", ["No", "Sí"])
         ever_married = st.selectbox("Alguna vez casado", ["No", "Sí"])
-        work_type = st.selectbox("Tipo de trabajo", ["Privado", "Autónomo", "Gubernamental", "Niño", "Nunca ha trabajado"])
 
     with col2:
+        work_type = st.selectbox("Tipo de trabajo", ["Privado", "Autónomo", "Gubernamental", "Niño", "Nunca ha trabajado"])
         residence_type = st.selectbox("Tipo de residencia", ["Urbana", "Rural"])
         avg_glucose_level = st.slider("Nivel promedio de glucosa", 50.0, 300.0, 100.0)
         bmi = st.slider("IMC (Índice de Masa Corporal)", 10.0, 50.0, 25.0)
@@ -51,8 +57,12 @@ def screen_predict():
         print(inputs)
 
         # Realizar predicción
-        prediction = model.predict(inputs)
-        probability = model.predict_proba(inputs)[0][1]
+        xgb_probabilities = xgb_model.predict_proba(inputs)[0][1]
+        inputs_nn = nn_scaler.transform(inputs)
+        nn_probabilities = nn_model.predict(inputs_nn)
+        nn_probability = nn_probabilities[0]
+        final_probabilities = 0.6 * xgb_probabilities + 0.4 * nn_probability
+        final_prediction = 1 if final_probabilities >= 0.5 else 0
 
          # Guardar la predicción en la base de datos
         save_prediction_to_db(inputs)
@@ -62,16 +72,18 @@ def screen_predict():
         col1, col2 = st.columns(2)
 
         with col1:
-            fig = create_gauge_chart(probability * 100, "Probabilidad de Ictus")
+            final_probabilities = float(final_probabilities)
+            fig = create_gauge_chart(final_probabilities * 100, "Probabilidad de Ictus")
             st.plotly_chart(fig, use_container_width=True)
 
         with col2:
-            st.metric("Predicción", "Alto riesgo de ictus" if prediction[0] == 1 else "Bajo riesgo de ictus")
-            st.write(f"Probabilidad de ictus: {probability:.2%}")
+            st.metric("Predicción", "Alto riesgo de ictus" if final_prediction == 1 else "Bajo riesgo de ictus")
+            st.write(f"Probabilidad de ictus: {final_probabilities:.2%}")
 
         # Añadir recomendaciones basadas en el riesgo
         st.subheader("Recomendaciones")
-        if prediction[0] == 1:
+
+        if final_prediction == 1:
             st.warning("Se recomienda consultar a un médico para una evaluación más detallada.")
         else:
             st.success("Mantener un estilo de vida saludable para prevenir riesgos futuros.")
