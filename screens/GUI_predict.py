@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from src.model.train_models_XGBoost import XGBoostStrokeModel
 from screens.aux_functions import create_gauge_chart
+from database_utils import save_prediction_to_db 
 
 @st.cache_resource
 def load_model():
@@ -52,6 +53,9 @@ def screen_predict():
         # Realizar predicción
         prediction = model.predict(inputs)
         probability = model.predict_proba(inputs)[0][1]
+
+         # Guardar la predicción en la base de datos
+        save_prediction_to_db(inputs)
 
         # Mostrar resultados
         st.subheader("Resultados de la Predicción")
