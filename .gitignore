@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Entornos virtuales
+env/
+venv/
+.venv/
+env.bak/
+venv.bak/
+
+# Archivos de usuario
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Informes
+reports/
+output/
+figures/
+
+#Modelos entrenados
+#model/
