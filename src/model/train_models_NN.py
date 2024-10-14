@@ -14,12 +14,12 @@ class NeuralNetworkStrokeModel:
         self.model = None
         self.scaler = StandardScaler()
         self.best_params = {
-            'n_layers': 5,
-            'n_units': 834,
+            'n_layers': 6,
+            'n_units': 478,
             'activation': 'relu',
-            'dropout_rate': 0.006061847852983231,
-            'batch_size': 74,
-            'epochs': 246
+            'dropout_rate': 0.05,
+            'batch_size': 49,
+            'epochs': 229
         }
 
     def load_data(self, filepath):
@@ -132,7 +132,7 @@ class NeuralNetworkStrokeModel:
 if __name__ == "__main__":
     model = NeuralNetworkStrokeModel()
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    data_path = os.path.join(current_dir, '..', 'data', 'test_stroke_woe_smote.csv')
+    data_path = os.path.join(current_dir, '..', 'data', 'train_stroke_woe_smote.csv')
     df = model.load_data(data_path)
     X, y = model.preprocess_data(df)
     model.train_model(X, y)

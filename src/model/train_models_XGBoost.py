@@ -43,12 +43,12 @@ class XGBoostStrokeModel:
             X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
 
             self.model = xgb.XGBClassifier(
-                n_estimators=179,
-                learning_rate=0.07,
-                max_depth=9,
+                n_estimators=475,
+                learning_rate=0.04,
+                max_depth=12,
                 min_child_weight=1,
-                subsample=0.8,
-                colsample_bytree=0.92,
+                subsample=0.72,
+                colsample_bytree=0.84,
                 random_state=42
             )
             self.model.fit(X_train_resampled, y_train_resampled)
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     model = XGBoostStrokeModel()
     # Construir la ruta relativa al archivo de datos
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    data_path = os.path.join(current_dir, '..', 'data', 'stroke_woe_smote.csv')
+    data_path = os.path.join(current_dir, '..', 'data', 'train_stroke_woe_smote.csv')
     df = model.load_data(data_path)
     X, y = model.preprocess_data(df)
     model.train_model(X, y)
