@@ -12,7 +12,8 @@ venv/
 .venv/
 env.bak/
 venv.bak/
-
+env
+.env
 # Archivos de usuario
 *.swp
 *.swo
