@@ -1,10 +1,8 @@
 import streamlit as st
-from GUI_home import home_screen
-from GUI_predict import screen_predict
-from GUI_report import screen_informe
-import sys
-import os
-from ..BBDD.create_database import create_database_and_table  # Importa la función de creación de la base de datos
+from streamlit.GUI_home import home_screen
+from streamlit.GUI_predict import screen_predict
+from streamlit.GUI_report import screen_informe
+from BBDD.create_database import create_database_and_table  # Importa la función de creación de la base de datos
 
 def main():
     create_database_and_table()  # Llama a la función importada

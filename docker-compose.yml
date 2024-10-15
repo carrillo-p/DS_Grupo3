@@ -23,7 +23,6 @@ services:
 
   streamlit:
     build:
-      context: ./screens
       dockerfile: Dockerfile
     container_name: streamlit-app
     restart: always
