@@ -1,4 +1,5 @@
 import pandas as pd
+import pickle
 import plotly.graph_objects as go
 
 def load_data():
@@ -29,4 +30,55 @@ def create_gauge_chart(value, title):
     fig.update_layout(paper_bgcolor = "lavender", font = {'color': "darkblue", 'family': "Arial"})
     
     return fig
+
+class DataCleaner:
+    def __init__(self, woe_dict_path='woe_dict.pkl'):
+        with open(woe_dict_path, 'rb') as f:
+            self.woe_dict = pickle.load(f)
+
+    def categorize_bmi(self, bmi):
+        if bmi < 18.5:
+            return 'Underweight'
+        elif 18.5 <= bmi < 24.9:
+            return 'Normal weight'
+        elif 25 <= bmi < 29.9:
+            return 'Overweight'
+        elif 30 <= bmi < 39.9:
+            return 'Obesity'
+        else:
+            return 'Mega Obesity'
+
+    def categorize_age(self, age):
+        if age < 18:
+            return 'Niño'
+        elif 18 <= age < 35:
+            return 'Joven'
+        elif 35 <= age < 60:
+            return 'Adulto'
+        else:
+            return 'Tercera Edad'
+
+    def categorize_glucose_level(self, glucose_level):
+        if glucose_level < 70:
+            return 'Low'
+        elif 70 <= glucose_level < 140:
+            return 'Medium'
+        else:
+            return 'High'
+
+    def transform_to_woe(self, df):
+        df_woe = df.copy()
+        for col, woe_df in self.woe_dict.items():
+            woe_map = woe_df.set_index('Category')['WoE'].to_dict()
+            df_woe[col] = df_woe[col].map(woe_map)
+        return df_woe
+
+    def cleanup_data(self, data):
+        data['bmi_category'] = data['bmi'].apply(self.categorize_bmi)
+        data['age_category'] = data['age'].apply(self.categorize_age)
+        data['glucose_level_category'] = data['avg_glucose_level'].apply(self.categorize_glucose_level)
+        data = self.transform_to_woe(data)
+        return data
+
+
 
