@@ -1,10 +1,10 @@
 import streamlit as st
-from create_database import create_database_and_table  # Importa la función de creación de la base de datos
+'''from create_database import create_database_and_table  # Importa la función de creación de la base de datos
 from database_utils import save_prediction_to_db  # Importa la función para guardar predicciones en la base de datos
 
 
 # Crear la base de datos y la tabla si no existen
-create_database_and_table()
+create_database_and_table()'''
 
 
 def home_screen():

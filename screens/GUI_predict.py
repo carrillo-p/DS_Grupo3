@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from src.model.train_models_XGBoost import XGBoostStrokeModel
 from screens.aux_functions import create_gauge_chart
-from database_utils import save_prediction_to_db 
+'''from database_utils import save_prediction_to_db '''
 import tensorflow as tf
 
 @st.cache_resource
@@ -64,8 +64,8 @@ def screen_predict():
         final_probabilities = 0.6 * xgb_probabilities + 0.4 * nn_probability
         final_prediction = 1 if final_probabilities >= 0.5 else 0
 
-         # Guardar la predicción en la base de datos
-        save_prediction_to_db(inputs)
+        '''# Guardar la predicción en la base de datos
+        save_prediction_to_db(inputs)'''
 
         # Mostrar resultados
         st.subheader("Resultados de la Predicción")

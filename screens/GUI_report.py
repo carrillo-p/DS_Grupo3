@@ -77,6 +77,7 @@ def screen_informe():
     ax.set_title("Importancia de las Características")
     st.pyplot(fig)
 
+'''
     # Distribución de probabilidades predichas
     st.subheader("Distribución de Probabilidades Predichas")
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -85,6 +86,8 @@ def screen_informe():
     ax.set_ylabel('Frecuencia')
     ax.set_title('Distribución de Probabilidades Predichas')
     st.pyplot(fig)
+
+'''
 
 if __name__ == "__main__":
     screen_informe()
