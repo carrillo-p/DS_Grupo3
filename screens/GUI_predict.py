@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from src.model.train_models_XGBoost import XGBoostStrokeModel
 from screens.aux_functions import create_gauge_chart
-from database_utils import save_prediction_to_db 
+from BBDD.database_utils import save_prediction_to_db 
 import tensorflow as tf
 
 @st.cache_resource
@@ -65,7 +65,31 @@ def screen_predict():
         final_prediction = 1 if final_probabilities >= 0.5 else 0
 
          # Guardar la predicción en la base de datos
-        save_prediction_to_db(inputs)
+         # Convertir final_probabilities a un valor compatible con MySQL (float)
+        if isinstance(final_probabilities, (list, np.ndarray)):
+            final_probabilities = float(final_probabilities[0])  # Si es un array, toma el primer valor y lo convierte a float
+        else:
+            final_probabilities = float(final_probabilities)  
+
+        bd_inputs = pd.DataFrame({
+            'age': [age],
+            'gender': [1 if gender == "Masculino" else 0],
+            'hypertension': [1 if hypertension == "Sí" else 0],
+            'heart_disease': [1 if heart_disease == "Sí" else 0],
+            'ever_married': [1 if ever_married == "Sí" else 0],
+            'work_type': [0 if work_type == "Privado" else 1 if work_type == "Autónomo" else 2 if work_type == "Gubernamental" else 3 if work_type == "Niño" else 4],
+            'Residence_type': [1 if residence_type == "Urbana" else 0],
+            'smoking_status': [0 if smoking_status == "Nunca fumó" else 1 if smoking_status == "Exfumador" else 2],
+            'bmi_category': [0 if bmi < 18.5 else 1 if bmi < 25 else 2 if bmi < 30 else 3],
+            'age_category': [0 if age < 13 else 1 if age < 18 else 2 if age < 60 else 3],
+            'glucose_level_category': [0 if avg_glucose_level < 100 else 1 if avg_glucose_level < 140 else 2],
+            'prediction':[final_prediction],
+            'prediction_probability':[final_probabilities]
+        
+        })
+        save_prediction_to_db(bd_inputs)
+        print("Datos enviados a la base de datos")
+
 
         # Mostrar resultados
         st.subheader("Resultados de la Predicción")
