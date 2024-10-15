@@ -2,6 +2,13 @@ import streamlit as st
 from screens.GUI_home import home_screen
 from screens.GUI_predict import screen_predict
 from screens.GUI_report import screen_informe
+from BBDD.create_database import create_database_and_table  # Importa la función de creación de la base de datos
+
+def main():
+    create_database_and_table()  # Llama a la función importada
+
+if __name__ == "__main__":
+    main()
 
 if 'screen' not in st.session_state:
     st.session_state.screen = 'home'
