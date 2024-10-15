@@ -3,15 +3,15 @@ import joblib
 import pandas as pd
 import numpy as np
 from src.model.train_models_XGBoost import XGBoostStrokeModel
-from screens.aux_functions import create_gauge_chart
-from database_utils import save_prediction_to_db 
+from screens.aux_functions import create_gauge_chart, load_css, load_image
+'''from database_utils import save_prediction_to_db '''
 import tensorflow as tf
 
 @st.cache_resource
 def load_model():
     return XGBoostStrokeModel.load_model('src/model/xgboost_model.joblib', 'src/model/xgb_scaler.joblib')
 def load_nn_model():
-    model = tf.keras.models.load_model('src/model/nn_stroke.keras')
+    model = tf.keras.models.load_model('src/model/nn_stroke_model.keras')
     scaler = joblib.load('src/model/nn_scaler.joblib')
     return model, scaler
 
@@ -19,8 +19,17 @@ xgb_model = load_model()
 nn_model, nn_scaler = load_nn_model()
 
 def screen_predict():
-    st.markdown("""<h1 style="text-align: center;">Predictor de Ictus</h1>""", unsafe_allow_html=True)
-    st.markdown("""<h3 style="text-align: center;">Ingrese los datos del paciente para predecir el riesgo de ictus</h3>""", unsafe_allow_html=True)
+    load_css('style.css')
+
+    # Logo
+    st.markdown('<div class="logo-container">', unsafe_allow_html=True)
+    image = load_image('predictus.png')
+    st.image(image, width=150)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Título y subtítulo 
+    st.markdown('<h1 class="big-font">Predictor de Ictus</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="medium-font">Ingrese los datos del paciente para predecir el riesgo de ictus</p>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
@@ -64,29 +73,24 @@ def screen_predict():
         final_probabilities = 0.6 * xgb_probabilities + 0.4 * nn_probability
         final_prediction = 1 if final_probabilities >= 0.5 else 0
 
-         # Guardar la predicción en la base de datos
-        save_prediction_to_db(inputs)
+        '''# Guardar la predicción en la base de datos
+        save_prediction_to_db(inputs)'''
 
         # Mostrar resultados
         st.subheader("Resultados de la Predicción")
-        col1, col2 = st.columns(2)
+      
+        final_probabilities = float(final_probabilities)
+        fig = create_gauge_chart(final_probabilities * 100, "Probabilidad de Ictus")
+        st.plotly_chart(fig, use_container_width=True)
 
-        with col1:
-            final_probabilities = float(final_probabilities)
-            fig = create_gauge_chart(final_probabilities * 100, "Probabilidad de Ictus")
-            st.plotly_chart(fig, use_container_width=True)
-
-        with col2:
-            st.metric("Predicción", "Alto riesgo de ictus" if final_prediction == 1 else "Bajo riesgo de ictus")
-            st.write(f"Probabilidad de ictus: {final_probabilities:.2%}")
 
         # Añadir recomendaciones basadas en el riesgo
         st.subheader("Recomendaciones")
 
         if final_prediction == 1:
-            st.warning("Se recomienda consultar a un médico para una evaluación más detallada.")
+            st.markdown('<div class="recommendation-high">Se recomienda consultar a un médico para una evaluación más detallada.</div>', unsafe_allow_html=True)
         else:
-            st.success("Mantener un estilo de vida saludable para prevenir riesgos futuros.")
+            st.markdown('<div class="recommendation-low">Mantener un estilo de vida saludable para prevenir riesgos futuros.</div>', unsafe_allow_html=True)
 
         # Factores de riesgo identificados
         st.subheader("Factores de riesgo identificados")
@@ -104,6 +108,13 @@ def screen_predict():
 
         if risk_factors:
             for factor in risk_factors:
-                st.write(f"- {factor}")
+                st.markdown(f'<div class="recommendation-high">{factor}</div>', unsafe_allow_html=True)
         else:
-            st.write("No se identificaron factores de riesgo principales.")
+            st.markdown('<div class="recommendation-low">No se identificaron factores de riesgo principales.</div>', unsafe_allow_html=True)
+
+        # Pie de página
+        st.markdown('---')
+        st.markdown('<p style="color: white;">© 2024 PREDICTUS - Tecnología Avanzada para la Prevención de Ictus. Todos los derechos reservados.</p>', unsafe_allow_html=True)
+
+if __name__ == "__main__":
+        screen_predict()
