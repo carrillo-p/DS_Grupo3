@@ -11,7 +11,7 @@ import tensorflow as tf
 def load_model():
     return XGBoostStrokeModel.load_model('src/model/xgboost_model.joblib', 'src/model/xgb_scaler.joblib')
 def load_nn_model():
-    model = tf.keras.models.load_model('src/model/nn_stroke.keras')
+    model = tf.keras.models.load_model('src/model/nn_stroke_model.keras')
     scaler = joblib.load('src/model/nn_scaler.joblib')
     return model, scaler
 
