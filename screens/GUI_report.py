@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, classification_report, roc_curve, auc
-from src.model.train_models_XGBoost import XGBoostStrokeModel
+from ..src.model.train_models_XGBoost import XGBoostStrokeModel
 import joblib
 import numpy as np
 import os
