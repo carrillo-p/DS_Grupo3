@@ -1,4 +1,5 @@
 import pandas as pd
+import pickle
 import plotly.graph_objects as go
 
 def load_data():
