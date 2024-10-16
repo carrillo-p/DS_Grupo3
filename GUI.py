@@ -1,4 +1,12 @@
 import streamlit as st
+
+# Configuración de la página
+st.set_page_config(
+    page_title="PREDICTUS - Predicción de Ictus",
+    page_icon="🧠",
+    layout="wide"
+)
+
 from screens.GUI_home import home_screen
 from screens.GUI_predict import screen_predict
 from screens.GUI_report import screen_informe
@@ -30,6 +38,3 @@ elif st.session_state.screen == 'predict':
     screen_predict()
 elif st.session_state.screen == 'informe':
     screen_informe()
-
-st.markdown("---")
-st.markdown("© 2024 Stroke Predictor. Todos los derechos reservados.")
