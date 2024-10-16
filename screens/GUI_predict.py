@@ -3,7 +3,7 @@ import joblib
 import pandas as pd
 import numpy as np
 from src.model.train_models_XGBoost import XGBoostStrokeModel
-from aux_functions import create_gauge_chart
+from screens.aux_functions import create_gauge_chart
 from BBDD.database_utils import save_prediction_to_db 
 import tensorflow as tf
 
