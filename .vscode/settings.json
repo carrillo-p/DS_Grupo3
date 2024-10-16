@@ -9,9 +9,9 @@
             "server": "localhost",
             "port": 3306,
             "driver": "MySQL",
-            "database": "health_data",
             "name": "stroke",
-            "username": "admin"
+            "database": "health_data",
+            "username": "root"
         }
     ]
 }
