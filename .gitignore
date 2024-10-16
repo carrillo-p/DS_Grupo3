@@ -14,6 +14,7 @@ env.bak/
 venv.bak/
 env
 .env
+env_name/
 # Archivos de usuario
 *.swp
 *.swo
@@ -25,5 +26,11 @@ reports/
 output/
 figures/
 
-#Modelos entrenados
-#model/
+#Datos
+Normal/
+Normal_test/
+Stroke/
+Stroke_test/
+
+#Sql
+session.sql
