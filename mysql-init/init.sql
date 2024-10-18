@@ -1,5 +1,9 @@
 -- Script para crear la tabla patient_predictions
 
+CREATE DATABASE IF NOT EXISTS health_data;
+
+USE health_data;
+
 CREATE TABLE IF NOT EXISTS patient_predictions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     age INT,
@@ -15,4 +19,12 @@ CREATE TABLE IF NOT EXISTS patient_predictions (
     glucose_level_category VARCHAR(20),
     prediction INT,
     prediction_probability FLOAT
+);
+
+CREATE TABLE IF NOT EXISTS model_metrics (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    avg_prediction FLOAT,
+    entropy FLOAT,
+    ks_statistic FLOAT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
 );
