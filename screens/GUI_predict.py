@@ -9,13 +9,22 @@ import tensorflow as tf
 
 @st.cache_resource
 def load_model():
-    return XGBoostStrokeModel.load_model('src/model/xgboost_model.joblib', 'src/model/xgb_scaler.joblib')
+    dict_woe = joblib.load('src/model/woe_dict.joblib')
+    return XGBoostStrokeModel.load_model('src/model/xgboost_model.joblib', 'src/model/xgb_scaler.joblib'), dict_woe
 def load_nn_model():
     model = tf.keras.models.load_model('src/model/nn_stroke_model.keras')
     scaler = joblib.load('src/model/nn_scaler.joblib')
     return model, scaler
+def transform_to_woe(df, woe_dict):
+    df_woe = df.copy()
+    for col, woe_df in woe_dict.items():
+        woe_map = woe_df.set_index('Category')['WoE'].to_dict()
+        df_woe[col] = df_woe[col].map(woe_map)
+    return df_woe
 
-xgb_model = load_model()
+
+
+xgb_model, dict_woe = load_model()
 nn_model, nn_scaler = load_nn_model()
 
 def screen_predict():
@@ -62,12 +71,18 @@ def screen_predict():
             'glucose_level_category': [0 if avg_glucose_level < 100 else 1 if avg_glucose_level < 140 else 2]
         })
 
+        category_columns = ['work_type', 'smoking_status', 'bmi_category', 'age_category', 'glucose_level_category']
+
+        # Transformar variables categóricas a WOE
+        inputs_woe = inputs.copy()
+        inputs_woe[category_columns] = transform_to_woe(inputs_woe[category_columns], dict_woe)
+
         print("Datos enviados al modelo:")
         print(inputs)
 
         # Realizar predicción
-        xgb_probabilities = xgb_model.predict_proba(inputs)[0][1]
-        inputs_nn = nn_scaler.transform(inputs)
+        xgb_probabilities = xgb_model.predict_proba(inputs_woe)[0][1]
+        inputs_nn = nn_scaler.transform(inputs_woe)
         nn_probabilities = nn_model.predict(inputs_nn)
         nn_probability = nn_probabilities[0]
         final_probabilities = 0.6 * xgb_probabilities + 0.4 * nn_probability
