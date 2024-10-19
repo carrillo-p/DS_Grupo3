@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from dotenv import load_dotenv
 import os
 from sqlalchemy.orm import sessionmaker
-from models import Base
+from BBDD.models import Base
 
 # Cargar las variables de entorno desde el archivo .env
 load_dotenv()

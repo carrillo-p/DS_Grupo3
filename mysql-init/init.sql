@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS patient_predictions (
     age_category VARCHAR(20),
     glucose_level_category VARCHAR(20),
     prediction INT,
-    prediction_probability FLOAT
+    prediction_probability FLOAT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS model_metrics (

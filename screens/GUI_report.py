@@ -46,56 +46,58 @@ def screen_informe():
     st.markdown('<h1 class="big-font">Predictor de Ictus</h1>', unsafe_allow_html=True)
     st.markdown('<p class="medium-font">Métricas de rendimiento del modelo</p>', unsafe_allow_html=True)
 
-    conn = get_database_connection()
+    session = get_database_connection()
 
     # Cargar el historial de métricas de la base de datos
-    metrics_history = pd.read_sql('SELECT * FROM model_metrics ORDER BY timestamp', conn)
 
-    # Cerrar la conexión una vez realizada la consulta
-    conn.close()
+    try:
 
-    if not metrics_history.empty:
-        latest_metrics = metrics_history.iloc[-1]
-        st.metric("Predicción promedio", f"{latest_metrics['avg_prediction']:.4f}")
-        st.metric("Entropía", f"{latest_metrics['entropy']:.4f}")
-        st.metric("Estadístico KS", f"{latest_metrics['ks_statistic']:.4f}")
-    else:
-        st.warning("No hay datos de métricas disponibles.")
+        metrics_history = pd.read_sql('SELECT * FROM model_metrics ORDER BY timestamp', session.bind)
 
-    st.markdown('<p class="medium-font">Gráficos de rendimiento del modelo</p>', unsafe_allow_html=True)
-    if not metrics_history.empty:
-        fig_avg, fig_entropy, fig_ks = update_performance_charts(metrics_history)
-        st.plotly_chart(fig_avg)
-        st.plotly_chart(fig_entropy)
-        st.plotly_chart(fig_ks)
-    else:
-        st.warning("No hay suficientes datos para generar gráficos.")
-
-    if len(metrics_history) >= 50:
-        recent_metrics = metrics_history.tail(50)
-        avg_prediction_change = recent_metrics['avg_prediction'].pct_change().mean()
-        entropy_change = recent_metrics['entropy'].pct_change().mean()
-        ks_change = recent_metrics['ks_statistic'].pct_change().mean()
-
-        st.subheader("Detección de Cambios")
-        if abs(avg_prediction_change) > 0.1 or abs(entropy_change) > 0.1 or abs(ks_change) > 0.1:
-            st.warning("Se han detectado cambios significativos en las métricas del modelo. Se recomienda una revisión.")
+        if not metrics_history.empty:
+            latest_metrics = metrics_history.iloc[-1]
+            st.metric("Predicción promedio", f"{latest_metrics['avg_prediction']:.4f}")
+            st.metric("Entropía", f"{latest_metrics['entropy']:.4f}")
+            st.metric("Estadístico KS", f"{latest_metrics['ks_statistic']:.4f}")
         else:
-            st.success("No se han detectado cambios significativos en las métricas del modelo.")
-    else:
-        st.info("Se necesitan al menos 50 entradas de métricas para la detección de cambios.")
+            st.warning("No hay datos de métricas disponibles.")
 
-    st.markdown('<p class="medium-font">Distribución de Predicciones Recientes</p>', unsafe_allow_html=True)
+        st.markdown('<p class="medium-font">Gráficos de rendimiento del modelo</p>', unsafe_allow_html=True)
+        if not metrics_history.empty:
+            fig_avg, fig_entropy, fig_ks = update_performance_charts(metrics_history)
+            st.plotly_chart(fig_avg)
+            st.plotly_chart(fig_entropy)
+            st.plotly_chart(fig_ks)
+        else:
+            st.warning("No hay suficientes datos para generar gráficos.")
 
-    recent_predictions = pd.read_sql_query(
-        'SELECT prediction_probability FROM predictions ORDER BY timestamp DESC LIMIT 1000', 
-        conn
-    )
-    if not recent_predictions.empty:
-        fig_dist = plot_prediction_distribution(recent_predictions['prediction_probability'])
-        st.plotly_chart(fig_dist)
-    else:
-        st.warning("No hay datos de predicciones recientes disponibles.")
+        if len(metrics_history) >= 50:
+            recent_metrics = metrics_history.tail(50)
+            avg_prediction_change = recent_metrics['avg_prediction'].pct_change().mean()
+            entropy_change = recent_metrics['entropy'].pct_change().mean()
+            ks_change = recent_metrics['ks_statistic'].pct_change().mean()
+
+            st.subheader("Detección de Cambios")
+            if abs(avg_prediction_change) > 0.1 or abs(entropy_change) > 0.1 or abs(ks_change) > 0.1:
+                st.warning("Se han detectado cambios significativos en las métricas del modelo. Se recomienda una revisión.")
+            else:
+                st.success("No se han detectado cambios significativos en las métricas del modelo.")
+        else:
+            st.info("Se necesitan al menos 50 entradas de métricas para la detección de cambios.")
+
+        st.markdown('<p class="medium-font">Distribución de Predicciones Recientes</p>', unsafe_allow_html=True)
+
+        recent_predictions = pd.read_sql_query(
+            'SELECT prediction_probability FROM patient_predictions ORDER BY timestamp DESC LIMIT 1000', 
+            session.bind
+        )
+        if not recent_predictions.empty:
+            fig_dist = plot_prediction_distribution(recent_predictions['prediction_probability'])
+            st.plotly_chart(fig_dist)
+        else:
+            st.warning("No hay datos de predicciones recientes disponibles.")
+    finally:
+        session.close()
 
 if __name__ == "__main__":
     screen_informe()
