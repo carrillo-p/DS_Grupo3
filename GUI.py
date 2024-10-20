@@ -10,6 +10,7 @@ st.set_page_config(
 from screens.GUI_home import home_screen
 from screens.GUI_predict import screen_predict
 from screens.GUI_report import screen_informe
+from screens.GUI_info import screen_info
 
 if 'screen' not in st.session_state:
     st.session_state.screen = 'home'
@@ -22,8 +23,10 @@ if st.sidebar.button("Home"):
     change_screen("home")
 if st.sidebar.button("Predicción de Stroke"):
     change_screen("predict")
-if st.sidebar.button("Informe de Modelos"):
+if st.sidebar.button("Métricas de Rendimiento"):
     change_screen("informe")
+if st.sidebar.button("Información del Modelo"):
+    change_screen("info")
 
 if st.session_state.screen == 'home':
     home_screen()
@@ -31,3 +34,5 @@ elif st.session_state.screen == 'predict':
     screen_predict()
 elif st.session_state.screen == 'informe':
     screen_informe()
+elif st.session_state.screen == 'info':
+    screen_info()

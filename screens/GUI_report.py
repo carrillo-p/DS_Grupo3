@@ -1,12 +1,9 @@
-import os
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from sqlalchemy.ext.declarative import declarative_base
 from scipy.stats import ks_2samp
 from screens.aux_functions import load_css, load_image
-from dotenv import load_dotenv
 from BBDD.database_utils import get_database_connection
 
 def calculate_metrics(prediction, probabilities, reference_data):
