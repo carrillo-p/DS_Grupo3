@@ -8,6 +8,8 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 import matplotlib.pyplot as plt
 import os
 import joblib
+import mlflow
+import mlflow.tensorflow
 
 class NeuralNetworkStrokeModel:
     def __init__(self):
@@ -130,12 +132,23 @@ class NeuralNetworkStrokeModel:
         return self.model.predict(X_scaled)
 
 if __name__ == "__main__":
-    model = NeuralNetworkStrokeModel()
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    data_path = os.path.join(current_dir, '..', 'data', 'train_stroke_woe_smote.csv')
-    df = model.load_data(data_path)
-    X, y = model.preprocess_data(df)
-    model.train_model(X, y)
-    model_path = os.path.join(current_dir, 'nn_stroke_model.keras')
-    scaler_path = os.path.join(current_dir, 'nn_scaler.joblib')
-    model.save_model(model_path, scaler_path)
+    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_experiment("stroke_prediction_nn_experiment")
+
+    with mlflow.start_run():
+        model = NeuralNetworkStrokeModel()
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        data_path = os.path.join(current_dir, '..', 'data', 'train_stroke_woe_smote.csv')
+        df = model.load_data(data_path)
+        X, y = model.preprocess_data(df)
+
+        mlflow.log_params(model.best_params)
+        model.train_model(X, y)
+
+        model_path = os.path.join(current_dir, 'nn_stroke_model.keras')
+        scaler_path = os.path.join(current_dir, 'nn_scaler.joblib')
+        model.save_model(model_path, scaler_path)
+
+        mlflow.tensorflow.log_model(tf_saved_model_dir=model_path, tf_meta_graph_tags=None, tf_signature_def_key=None, artifact_path="nn_stroke_model")
+        mlflow.log_artifact(scaler_path)
+        mlflow.log_artifact(__file__)

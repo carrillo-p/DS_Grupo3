@@ -25,8 +25,6 @@ def transform_to_woe(df, woe_dict):
         df_woe[col] = df_woe[col].map(woe_map)
     return df_woe
 
-
-
 xgb_model, dict_woe = load_model()
 nn_model, nn_scaler = load_nn_model()
 

@@ -29,3 +29,19 @@ class PatientPredictions(Base):
     glucose_level_category = Column(String(20))
     prediction = Column(Integer)
     prediction_probability = Column(Float)
+
+class PatientData(Base):
+    __tablename__ = 'new_data'
+    id = Column(Integer, primary_key=True)
+    age = Column(Integer)
+    gender = Column(String(10))
+    hypertension = Column(Integer)
+    heart_disease = Column(Integer)
+    ever_married = Column(String(5))
+    work_type = Column(String(50))
+    Residence_type = Column(String(10))
+    smoking_status = Column(String(20))
+    bmi_category = Column(String(20))
+    age_category = Column(String(20))
+    glucose_level_category = Column(String(20))
+    stroke = Column(Integer)
