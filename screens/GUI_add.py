@@ -15,7 +15,7 @@ from src.model.mlflow_xgboost import XGBoostStrokeModel, background_worker
 def load_model():
     with open('src/Data/woe_dict.pkl', 'rb') as f:
         dict_woe = pickle.load(f)
-    xgb_model = XGBoostStrokeModel('src/model/xgboost_model.joblib', 'src/model/xgb_scaler.joblib')
+    xgb_model = XGBoostStrokeModel(model_path = 'src/model/xgboost_model.joblib', scaler_path = 'src/model/xgb_scaler.joblib')
     return xgb_model, dict_woe
 
 def load_nn_model():

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score, roc_curve
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, roc_curve, auc
 import xgboost as xgb
 import joblib
 import seaborn as sns
@@ -10,13 +10,12 @@ import matplotlib.pyplot as plt
 import os
 import mlflow
 import mlflow.sklearn
-import mysql.connector
-from mysql.connector import Error
 import time
 from threading import Thread
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.orm import sessionmaker
+import pymysql
 
 load_dotenv()
 
@@ -24,23 +23,40 @@ mlflow.set_tracking_uri('http://mlflow:5000')
 mlflow.set_experiment('stroke_prediction_xgboost')
 
 class XGBoostStrokeModel:
-    def __init__(self, model_path, scaler_path):
-        self.model = joblib.load(model_path)
-        self.scaler = joblib.load(scaler_path)
-        self.feature_names = None
-        self.last_check_file = 'last_check.txt'
-        self.check_interval = int(os.getenv('CHECK_INTERVAL', 3600))  # 1 hora por defecto, configurable
-        self.db_config = {
-            'host': os.getenv('DB_HOST', 'mysql'),
-            'user': os.getenv('DB_USER'),
-            'password': os.getenv('DB_PASSWORD'),
-            'database': os.getenv('DB_NAME'),
-            'table': os.getenv('DB_TABLE', 'new_data')
-        }
+    def __init__(self, csv_path=None, model_path=None, scaler_path=None):
+        if csv_path:
+            self.model = None
+            self.scaler = None
+            self.feature_names = None
+            self.last_check_file = 'last_check.txt'
+            self.initial_training_file = 'initial_training_done.txt'
+            self.check_interval = int(os.getenv('CHECK_INTERVAL', 3600))
+            self.csv_path = csv_path
+            self.db_config = {
+                'host': os.getenv('DB_HOST', 'mysql'),
+                'user': os.getenv('DB_USER'),
+                'password': os.getenv('DB_PASSWORD'),
+                'database': os.getenv('DB_NAME'),
+                'table': os.getenv('DB_TABLE', 'new_data')
+            }
+            self.engine = self.create_db_engine()
+        elif model_path and scaler_path:
+            self.model = joblib.load('src/model/xgboost_model.joblib')
+            self.scaler = joblib.load('src/model/xgb_scaler.joblib')
 
     def create_db_engine(self):
         db_uri = f"mysql+pymysql://{self.db_config['user']}:{self.db_config['password']}@{self.db_config['host']}/{self.db_config['database']}"
         return create_engine(db_uri)
+
+    def load_data_from_csv(self):
+        try:
+            df = pd.read_csv(self.csv_path)
+            self.feature_names = df.drop('stroke', axis=1).columns
+            print(f"Datos cargados desde CSV. Número de filas: {len(df)}")
+            return df
+        except Exception as e:
+            print(f"Error al cargar datos desde CSV: {e}")
+            return pd.DataFrame()
 
     def load_data_from_mysql(self):
         try:
@@ -51,28 +67,65 @@ class XGBoostStrokeModel:
             query = session.query(table)
             df = pd.read_sql(query.statement, self.engine)
             self.feature_names = df.drop('stroke', axis=1).columns
-            print(f"Datos cargados. Número de filas: {len(df)}")
+            print(f"Datos cargados desde MySQL. Número de filas: {len(df)}")
             return df
         except Exception as e:
             print(f"Error al cargar datos desde MySQL: {e}")
             return pd.DataFrame()
 
     def preprocess_data(self, df):
-        X = df.drop('stroke', axis=1)
-        y = df['stroke']
-        X_scaled = self.scaler.transform(X)
-        return X_scaled, y
+        if df.empty:
+            print("El DataFrame está vacío")
+            return None, None
+        else:
+            if 'stroke' in df.columns:
+                X = df.drop('stroke', axis=1)
+                y = df['stroke']
+                if self.scaler is None:
+                    self.scaler = StandardScaler()
+                    X_scaled = self.scaler.fit_transform(X)
+                else:
+                    X_scaled = self.scaler.transform(X)
+                return X_scaled, y
+            else:
+                print("La columna 'stroke' no está presente en el DataFrame")
+            # Manejar el error apropiadamente, por ejemplo:
+            return None, None
+        
+        
 
-    def retrain_model(self, X, y):
+    def train_model(self, X, y):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         
+        print("Forma de X_train:", X_train.shape)
+        print("Forma de y_train:", y_train.shape)
+        print("Tipos de datos en X_train:", X_train.dtypes if isinstance(X_train, pd.DataFrame) else X_train.dtype)
+        print("Valores únicos en y_train:", np.unique(y_train))
+        print("Hay NaN en X_train:", np.isnan(X_train).any())
+        print("Hay infinitos en X_train:", np.isinf(X_train).any())
+        
         with mlflow.start_run():
-            self.model.fit(X_train, y_train)
+            if self.model is None:
+                self.model = xgb.XGBClassifier(
+                    use_label_encoder=False,
+                    eval_metric='logloss',
+                    n_estimators=100,
+                    max_depth=3,
+                    learning_rate=0.1,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    objective='binary:logistic'
+                )
             
-            # Registrar parámetros
+            try:
+                self.model.fit(X_train, y_train)
+            except Exception as e:
+                print("Error al ajustar el modelo XGBoost:")
+                print(str(e))
+                raise
+            
             mlflow.log_params(self.model.get_params())
             
-            # Evaluar y registrar métricas
             y_pred = self.model.predict(X_test)
             accuracy = accuracy_score(y_test, y_pred)
             roc_auc = roc_auc_score(y_test, self.model.predict_proba(X_test)[:, 1])
@@ -80,112 +133,70 @@ class XGBoostStrokeModel:
             mlflow.log_metric("accuracy", accuracy)
             mlflow.log_metric("roc_auc", roc_auc)
             
-            # Registrar el modelo
             mlflow.sklearn.log_model(self.model, "model")
             
-            # Generar y registrar gráficos
             self.log_plots(X_test, y_test)
             
         return X_test, y_test
+    
+    def log_plots(self, X_test, y_test):
+        # Generar y registrar la curva ROC
+        y_test_pred_proba = self.model.predict_proba(X_test)[:, 1]
+        fpr, tpr, _ = roc_curve(y_test, y_test_pred_proba)
+        roc_auc = auc(fpr, tpr)
 
-    def evaluate_model(self, X_test, y_test, output_dir='output'):
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-
-        y_pred = self.model.predict(X_test)
-        y_pred_proba = self.model.predict_proba(X_test)[:, 1]
-
-        # Accuracy
-        accuracy = accuracy_score(y_test, y_pred)
-        mlflow.log_metric("accuracy", accuracy)
-
-        # Classification Report
-        report = classification_report(y_test, y_pred)
-        with open(os.path.join(output_dir, 'classification_report.txt'), 'w') as f:
-            f.write(report)
-        mlflow.log_artifact(os.path.join(output_dir, 'classification_report.txt'))
-
-        # ROC AUC
-        roc_auc = roc_auc_score(y_test, y_pred_proba)
-        mlflow.log_metric("roc_auc", roc_auc)
-
-        # Generar y registrar gráficos
-        self.log_plots(X_test, y_test, output_dir)
-
-    def log_plots(self, X_test, y_test, output_dir='output'):
-        # Confusion Matrix
-        y_pred = self.model.predict(X_test)
-        cm = confusion_matrix(y_test, y_pred)
         plt.figure(figsize=(8, 6))
-        sns.heatmap(cm, annot=True, fmt='d')
-        plt.title('Confusion Matrix')
-        plt.ylabel('Actual')
-        plt.xlabel('Predicted')
-        plt.savefig(os.path.join(output_dir, 'confusion_matrix.png'))
-        plt.close()
-        mlflow.log_artifact(os.path.join(output_dir, 'confusion_matrix.png'))
-
-        # ROC Curve
-        y_pred_proba = self.model.predict_proba(X_test)[:, 1]
-        fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
-        plt.figure(figsize=(8, 6))
-        plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {roc_auc_score(y_test, y_pred_proba):.2f})')
-        plt.plot([0, 1], [0, 1], linestyle='--')
+        plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {roc_auc:.4f})', color='darkorange', lw=2)
+        plt.plot([0, 1], [0, 1], color='navy', linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
         plt.title('Receiver Operating Characteristic (ROC) Curve')
-        plt.legend()
-        plt.savefig(os.path.join(output_dir, 'roc_curve.png'))
+        plt.legend(loc="lower right")
+        plt.grid(True)
+        plt.savefig('roc_curve.png')
         plt.close()
-        mlflow.log_artifact(os.path.join(output_dir, 'roc_curve.png'))
+        mlflow.log_artifact('roc_curve.png')
 
-        # Feature Importance
+        # Generar y registrar la importancia de las características
         importance = self.model.feature_importances_
-        feature_importance = pd.DataFrame({
-            'feature': self.feature_names,
-            'importance': importance
-        }).sort_values('importance', ascending=False)
+        importance_df = pd.DataFrame({
+            'Feature': self.feature_names,
+            'Importance': importance
+        }).sort_values(by='Importance', ascending=False)
 
-        plt.figure(figsize=(10, 6))
-        sns.barplot(x='importance', y='feature', data=feature_importance)
+        plt.figure(figsize=(10, 8))
+        sns.barplot(x='Importance', y='Feature', data=importance_df)
         plt.title('Feature Importance')
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'feature_importance.png'))
+        plt.savefig('feature_importance.png')
         plt.close()
-        mlflow.log_artifact(os.path.join(output_dir, 'feature_importance.png'))
+        mlflow.log_artifact('feature_importance.png')
 
-    def save_model(self, model_path, scaler_path):
-        joblib.dump(self.model, model_path)
-        joblib.dump(self.scaler, scaler_path)
-        print(f"Modelo guardado en {model_path}")
-        print(f"Scaler guardado en {scaler_path}")
-        mlflow.log_artifact(model_path)
-        mlflow.log_artifact(scaler_path)
-
-    def check_and_retrain(self):
-        if self.should_check():
-            with mlflow.start_run():
-                df = self.load_data_from_mysql()
-                
-                if len(df) > int(os.getenv('RETRAIN_THRESHOLD', 10000)):
-                    X, y = self.preprocess_data(df)
-                    X_test, y_test = self.retrain_model(X, y)
-                    self.save_model('xgboost_model.joblib', 'xgb_scaler.joblib')
-                    self.evaluate_model(X_test, y_test)
-                else:
-                    mlflow.log_param("retrained", False)
-                    mlflow.log_param("data_count", len(df))
-                
-                self.update_last_check()
+    def initial_training(self):
+        if not os.path.exists(self.initial_training_file):
+            print("Realizando entrenamiento inicial desde CSV...")
+            df = self.load_data_from_csv()
+            X, y = self.preprocess_data(df)
+            self.train_model(X, y)
+            with open(self.initial_training_file, 'w') as f:
+                f.write('Initial training completed')
+            print("Entrenamiento inicial completado.")
+        else:
+            print("El entrenamiento inicial ya se ha realizado anteriormente.")
+            self.load_model('src/model/xgboost_model.joblib', 'src/model/xgb_scaler.joblib')
 
     def check_and_retrain(self):
         if self.should_check():
+            print("Verificando condiciones para reentrenamiento...")
             df = self.load_data_from_mysql()
             
             if len(df) > int(os.getenv('RETRAIN_THRESHOLD', 10000)):
+                print("Condiciones cumplidas. Iniciando reentrenamiento...")
                 X, y = self.preprocess_data(df)
-                self.retrain_model(X, y)
-                self.save_model('xgboost_model.joblib', 'xgb_scaler.joblib')
+                self.train_model(X, y)
+            else:
+                print("No se cumplen las condiciones para reentrenar.")
             
             self.update_last_check()
 
@@ -201,12 +212,6 @@ class XGBoostStrokeModel:
     def update_last_check(self):
         with open(self.last_check_file, 'w') as f:
             f.write(str(time.time()))
-    @classmethod
-    def load_model(cls, model_path, scaler_path):
-        instance = cls()
-        instance.model = joblib.load(model_path)
-        instance.scaler = joblib.load(scaler_path)
-        return instance
 
     def predict(self, X):
         X_scaled = self.scaler.transform(X)
@@ -216,6 +221,9 @@ class XGBoostStrokeModel:
         X_scaled = self.scaler.transform(X)
         return self.model.predict_proba(X_scaled)
     
+    def load_model(self, model_path, scaler_path):
+        self.model = joblib.load(model_path)
+        self.scaler = joblib.load(scaler_path)
 
 def background_worker(model):
     while True:
@@ -223,8 +231,7 @@ def background_worker(model):
         time.sleep(model.check_interval)
 
 # Inicialización del modelo y el worker en segundo plano
-model_path = 'src/model/xgboost_model.joblib'
-scaler_path = 'src/model/xgb_scaler.joblib'
-model = XGBoostStrokeModel(model_path, scaler_path)
+model = XGBoostStrokeModel(csv_path='src/Data/train_stroke_woe_smote.csv')
+model.initial_training()
 bg_thread = Thread(target=background_worker, args=(model,))
 bg_thread.start()

@@ -72,6 +72,7 @@ psutil==6.0.0
 pure-eval==0.2.3
 pyarrow==17.0.0
 pydeck==0.9.1
+pymysql==1.1.1
 pygments==2.18.0
 pyparsing==3.1.4
 python-dateutil==2.9.0.post0

@@ -1,4 +1,17 @@
 import streamlit as st
+import mlflow
+from threading import Thread
+from src.model.mlflow_xgboost import XGBoostStrokeModel, background_worker
+
+mlflow.set_tracking_uri('http://mlflow:5000')
+mlflow.set_experiment('stroke_prediction_xgboost')
+
+# Inicialización del modelo
+model = XGBoostStrokeModel(csv_path='src/Data/train_stroke_woe_smote.csv')
+model.initial_training()
+
+bg_thread = Thread(target=background_worker, args=(model,))
+bg_thread.start()
 
 # Configuración de la página
 st.set_page_config(
