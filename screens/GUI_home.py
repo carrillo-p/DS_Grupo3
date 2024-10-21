@@ -35,11 +35,18 @@ def home_screen():
         <p>Proporcionamos un informe completo sobre los factores de riesgo identificados y recomendaciones personalizadas para mejorar su salud.</p>
         </div>
         """, unsafe_allow_html=True)
+        if st.button('Ver Informe'):
+            st.session_state.screen = 'informe'
 
     # Llamada a la acción
     st.markdown('## ¿Listo para comenzar?', unsafe_allow_html=True)
-    if st.button('Iniciar Predicción'):
-        st.session_state.screen = 'predict'
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button('Iniciar Predicción'):
+            st.session_state.screen = 'predict'
+    with col2:
+        if st.button('Iniciar Predicción de Imágenes'):
+            st.session_state.screen = 'image_prediction'
 
     # Información adicional
     st.markdown('### Sobre el Ictus', unsafe_allow_html=True)

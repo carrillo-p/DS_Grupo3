@@ -37,7 +37,7 @@ def screen_image_prediction():
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Título y subtítulo
-    st.title("Clasificación de Imágenes de Ictus")
+    st.title("Predicción de Imágenes de Ictus")
     st.write("Sube una imagen para predecir si muestra signos de ictus.")
 
     # Carga de la imagen
@@ -46,7 +46,7 @@ def screen_image_prediction():
     if uploaded_file is not None:
         # Mostrar la imagen cargada
         image = Image.open(uploaded_file)
-        st.image(image, caption="Imagen cargada", use_column_width=True)
+        st.image(image, caption="Imagen cargada", width=300)
 
         # Preprocesar la imagen
         image_array = preprocess_image(image)
@@ -58,9 +58,9 @@ def screen_image_prediction():
         # Mostrar resultados
         st.subheader("Resultado de la Predicción")
         if prediction_probability >= 0.5:
-            st.markdown('<div style="color: red;">Sí</div>', unsafe_allow_html=True)
+            st.markdown('<div style="color: red;">Se han detectado signos de ictus en la TC.</div>', unsafe_allow_html=True)
         else:
-            st.markdown('<div style="color: green;">No</div>', unsafe_allow_html=True)
+            st.markdown('<div style="color: green;">No se han detectado signos de ictus en la TC.</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     screen_image_prediction()
