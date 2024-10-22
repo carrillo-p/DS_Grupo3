@@ -26,6 +26,7 @@ from screens.GUI_report import screen_informe
 from screens.GUI_info import screen_info
 from screens.GUI_add import screen_add
 
+
 if 'screen' not in st.session_state:
     st.session_state.screen = 'home'
 
@@ -39,6 +40,8 @@ if st.sidebar.button("Predicción de Stroke"):
     change_screen("predict")
 if st.sidebar.button("Métricas de Rendimiento"):
     change_screen("informe")
+if st.sidebar.button("Clasificación de Imágenes"):  # Nueva opción en el menú
+    change_screen("image_prediction")
 if st.sidebar.button("Información del Modelo"):
     change_screen("info")
 if st.sidebar.button("Añadrir nuevo caso"):
@@ -48,6 +51,8 @@ if st.session_state.screen == 'home':
     home_screen()
 elif st.session_state.screen == 'predict':
     screen_predict()
+elif st.session_state.screen == 'image_prediction':  # Mostrar la nueva pantalla
+    screen_image_prediction()
 elif st.session_state.screen == 'informe':
     screen_informe()
 elif st.session_state.screen == 'info':

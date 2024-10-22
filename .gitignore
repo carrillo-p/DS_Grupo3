@@ -26,4 +26,4 @@ output/
 figures/
 
 #Modelos entrenados
-#model/
+nn_stroke_img.keras
