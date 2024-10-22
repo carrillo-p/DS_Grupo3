@@ -4,18 +4,28 @@ import pandas as pd
 import numpy as np
 from src.model.train_models_XGBoost import XGBoostStrokeModel
 from screens.aux_functions import create_gauge_chart, load_css, load_image
-from BBDD.database_utils import save_prediction_to_db 
+from BBDD.database_utils import get_database_connection
+from BBDD.models import ModelMetrics, PatientPredictions
 import tensorflow as tf
+import pickle
 
 @st.cache_resource
 def load_model():
-    return XGBoostStrokeModel.load_model('src/model/xgboost_model.joblib', 'src/model/xgb_scaler.joblib')
+    with open('src/Data/woe_dict.pkl', 'rb') as f:
+        dict_woe = pickle.load(f)
+    return XGBoostStrokeModel.load_model('src/model/xgboost_model.joblib', 'src/model/xgb_scaler.joblib'), dict_woe
 def load_nn_model():
     model = tf.keras.models.load_model('src/model/nn_stroke_model.keras')
     scaler = joblib.load('src/model/nn_scaler.joblib')
     return model, scaler
+def transform_to_woe(df, woe_dict):
+    df_woe = df.copy()
+    for col, woe_df in woe_dict.items():
+        woe_map = woe_df.set_index('Category')['WoE'].to_dict()
+        df_woe[col] = df_woe[col].map(woe_map)
+    return df_woe
 
-xgb_model = load_model()
+xgb_model, dict_woe = load_model()
 nn_model, nn_scaler = load_nn_model()
 
 def screen_predict():
@@ -57,17 +67,24 @@ def screen_predict():
             'work_type': [0 if work_type == "Privado" else 1 if work_type == "Autónomo" else 2 if work_type == "Gubernamental" else 3 if work_type == "Niño" else 4],
             'Residence_type': [1 if residence_type == "Urbana" else 0],
             'smoking_status': [0 if smoking_status == "Nunca fumó" else 1 if smoking_status == "Exfumador" else 2],
-            'bmi_category': [0 if bmi < 18.5 else 1 if bmi < 25 else 2 if bmi < 30 else 3],
-            'age_category': [0 if age < 13 else 1 if age < 18 else 2 if age < 60 else 3],
-            'glucose_level_category': [0 if avg_glucose_level < 100 else 1 if avg_glucose_level < 140 else 2]
+            'bmi_category': ['Underweight' if bmi < 18.5 else 'Normal Weight' if bmi < 25 else 'Overweight' if bmi < 30 else 'Mega Obesity'],
+            'age_category': ['Niño' if age < 13 else 'Joven' if age < 18 else 'Adulto' if age < 60 else 'Tercera Edad'],
+            'glucose_level_category': ['Low' if avg_glucose_level < 100 else 'Medium' if avg_glucose_level < 140 else 'High']
         })
+
+        category_columns = ['work_type', 'smoking_status', 'bmi_category', 'age_category', 'glucose_level_category']
+
+        # Transformar variables categóricas a WOE
+        inputs_woe = inputs.copy()
+        inputs_woe[category_columns] = transform_to_woe(inputs_woe[category_columns], dict_woe)
 
         print("Datos enviados al modelo:")
         print(inputs)
+        print(inputs_woe)
 
         # Realizar predicción
-        xgb_probabilities = xgb_model.predict_proba(inputs)[0][1]
-        inputs_nn = nn_scaler.transform(inputs)
+        xgb_probabilities = xgb_model.predict_proba(inputs_woe)[0][1]
+        inputs_nn = nn_scaler.transform(inputs_woe)
         nn_probabilities = nn_model.predict(inputs_nn)
         nn_probability = nn_probabilities[0]
         final_probabilities = 0.6 * xgb_probabilities + 0.4 * nn_probability
@@ -81,25 +98,48 @@ def screen_predict():
         else:
             final_probabilities = float(final_probabilities)  
 
-        bd_inputs = pd.DataFrame({
-            'age': [age],
-            'gender': [1 if gender == "Masculino" else 0],
-            'hypertension': [1 if hypertension == "Sí" else 0],
-            'heart_disease': [1 if heart_disease == "Sí" else 0],
-            'ever_married': [1 if ever_married == "Sí" else 0],
-            'work_type': [0 if work_type == "Privado" else 1 if work_type == "Autónomo" else 2 if work_type == "Gubernamental" else 3 if work_type == "Niño" else 4],
-            'Residence_type': [1 if residence_type == "Urbana" else 0],
-            'smoking_status': [0 if smoking_status == "Nunca fumó" else 1 if smoking_status == "Exfumador" else 2],
-            'bmi_category': [0 if bmi < 18.5 else 1 if bmi < 25 else 2 if bmi < 30 else 3],
-            'age_category': [0 if age < 13 else 1 if age < 18 else 2 if age < 60 else 3],
-            'glucose_level_category': [0 if avg_glucose_level < 100 else 1 if avg_glucose_level < 140 else 2],
-            'prediction':[final_prediction],
-            'prediction_probability':[final_probabilities]
-        
-        })
-        save_prediction_to_db(bd_inputs)
-        print("Datos enviados a la base de datos")
+        session = get_database_connection()
+        try:
+            bd_inputs = PatientPredictions(
+                age=age,
+                gender=1 if gender == "Masculino" else 0,
+                hypertension=1 if hypertension == "Sí" else 0,
+                heart_disease=1 if heart_disease == "Sí" else 0,
+                ever_married=1 if ever_married == "Sí" else 0,
+                work_type=0 if work_type == "Privado" else 1 if work_type == "Autónomo" else 2 if work_type == "Gubernamental" else 3 if work_type == "Niño" else 4,
+                Residence_type=1 if residence_type == "Urbana" else 0,
+                smoking_status=0 if smoking_status == "Nunca fumó" else 1 if smoking_status == "Exfumador" else 2,
+                bmi_category=0 if bmi < 18.5 else 1 if bmi < 25 else 2 if bmi < 30 else 3,
+                age_category=0 if age < 13 else 1 if age < 18 else 2 if age < 60 else 3,
+                glucose_level_category=0 if avg_glucose_level < 100 else 1 if avg_glucose_level < 140 else 2,
+                prediction=final_prediction,
+                prediction_probability=final_probabilities
+            )
 
+            session.add(bd_inputs)
+            session.commit()
+            print("Datos enviados a la base de datos")
+
+            # Métricas del modelo
+            avg_prediction = final_probabilities  
+            entropy = -np.sum(final_probabilities * np.log(final_probabilities)) 
+            ks_statistic = np.max(final_probabilities) 
+            
+            new_metric = ModelMetrics(
+                avg_prediction=avg_prediction,
+                entropy=entropy,
+                ks_statistic=ks_statistic
+            )
+            session.add(new_metric)
+            session.commit()
+            print("Métricas del modelo guardadas en la base de datos")
+        except Exception as e:
+            # Si ocurre un error, revertir la transacción
+            session.rollback()
+            print(f"Error al insertar predicción o métricas: {e}")
+        finally:
+        # Cerrar la sesión
+            session.close()
 
         # Mostrar resultados
         st.subheader("Resultados de la Predicción")
