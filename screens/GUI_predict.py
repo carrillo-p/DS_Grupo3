@@ -177,6 +177,13 @@ def screen_predict():
         else:
             st.markdown('<div class="recommendation-low">No se identificaron factores de riesgo principales.</div>', unsafe_allow_html=True)
 
+        # Botón que lleva a una página web externa sobre prevención del ictus
+        st.subheader("Más información sobre el ictus y su prevención")
+        if st.button("Sobre el Ictus"):
+            js = "window.open('https://www.fundacioictus.com/es/sobre-el-ictus/prevencion/factores-de-riesgo/')"  # Cambia el enlace a la URL deseada
+            html = f"<script>{js}</script>"
+            st.markdown(html, unsafe_allow_html=True)
+
         # Pie de página
         st.markdown('---')
         st.markdown('<p style="color: white;">© 2024 PREDICTUS - Tecnología Avanzada para la Prevención de Ictus. Todos los derechos reservados.</p>', unsafe_allow_html=True)
