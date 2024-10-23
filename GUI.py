@@ -25,6 +25,7 @@ from screens.GUI_predict import screen_predict
 from screens.GUI_report import screen_informe
 from screens.GUI_info import screen_info
 from screens.GUI_add import screen_add
+from screens.GUI_img import screen_image_prediction
 
 
 if 'screen' not in st.session_state:
