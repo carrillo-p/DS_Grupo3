@@ -34,19 +34,25 @@ class XGBoostStrokeModel:
         skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
         accuracies = []
 
+        # Calcular el peso de las clases
+        class_0_weight = (y == 0).sum()
+        class_1_weight = (y == 1).sum()
+        scale_pos_weight = class_0_weight / class_1_weight
+
         for train_index, test_index in skf.split(X, y):
             X_train, X_test = X[train_index], X[test_index]
             y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
-            # Entrenamiento del modelo sin SMOTE
+            # Entrenamiento del modelo con `scale_pos_weight`
             self.model = xgb.XGBClassifier(
-                n_estimators=116,
-                learning_rate=0.05,
-                max_depth=11,
+                n_estimators=425,
+                learning_rate=0.04,
+                max_depth=8,
                 min_child_weight=1,
-                subsample=0.77,
-                colsample_bytree=0.76,
-                random_state=42
+                subsample=0.55,
+                colsample_bytree=0.88,
+                random_state=42,
+                scale_pos_weight=scale_pos_weight  # Añadir el peso de la clase positiva
             )
             self.model.fit(X_train, y_train)
 
@@ -58,7 +64,6 @@ class XGBoostStrokeModel:
 
         average_accuracy = sum(accuracies) / len(accuracies)
         print(f"\nAverage Accuracy across folds: {average_accuracy:.4f}")
-
 
     def evaluate_model(self, X_test, y_test, output_dir='output'):
         if not os.path.exists(output_dir):
