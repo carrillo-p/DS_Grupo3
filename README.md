@@ -50,6 +50,7 @@ Para ejecutar el proyecto localmente, sigue los pasos a continuación:
 
 ```bash
 git clone https://github.com/AI-School-F5-P3/DS_Grupo3.git
+```
 
 ### 2. Descargar el modelo de reconocimiento de imágenes
 Descarga el modelo preentrenado de reconocimiento de imágenes desde el siguiente enlace y guárdalo como `nn_stroke_img.keras`:
@@ -64,3 +65,4 @@ Para iniciar el entorno Docker, asegúrate de estar en el directorio raíz del p
 
 ```bash
 docker-compose up
+```
