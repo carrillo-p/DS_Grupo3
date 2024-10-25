@@ -1,6 +1,7 @@
 <p align="center">
   <img src="src/images/predictus.png" alt="Proyecto Logo" width="200"/>
 </p>
+
 # Data Science Proyecto - Grupo 3
 ## Predictus: Inteligencia Artificial para la Detección del Riesgo de Ictus
 
