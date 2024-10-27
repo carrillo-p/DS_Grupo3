@@ -1,9 +1,15 @@
 import streamlit as st
 import mlflow
 from threading import Thread
+from azureml.core import Workspace
 from src.model.mlflow_xgboost import XGBoostStrokeModel, background_worker
 
-mlflow.set_tracking_uri('http://mlflow:5000')
+workspace_name = "<your_workspace_name>"
+resource_group = "<your_resource_group>"
+subscription_id = "<your_subscription_id>"
+
+ws = Workspace.get(name=workspace_name, resource_group=resource_group, subscription_id=subscription_id)
+mlflow.set_tracking_uri(ws.get_mlflow_tracking_uri())
 mlflow.set_experiment('stroke_prediction_xgboost')
 
 # Inicialización del modelo

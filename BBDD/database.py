@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
+import requests
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import firestore
+from google.oauth2 import service_account
 import logging
 from datetime import datetime
-from dotenv import load_dotenv
 
 class FirebaseInitializer:
     def __init__(self):
@@ -26,21 +27,22 @@ class FirebaseInitializer:
     def _initialize_firebase(self):
         try:
             if not firebase_admin._apps:
-                # Obtener la ruta del directorio actual
-                current_dir = Path(__file__).parent.absolute()
+                # Obtener la URL de las credenciales desde las variables de entorno
+                credentials_url = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_URL')
                 
-                # Buscar el archivo de credenciales en el directorio actual
-                cred_path = current_dir / 'serviceAccountKey.json'
+                # Descargar el archivo JSON desde Azure Storage
+                response = requests.get(credentials_url)
+                credentials_path = '/tmp/credentials.json'
+                with open(credentials_path, 'wb') as f:
+                    f.write(response.content)
                 
-                if not cred_path.exists():
-                    raise FileNotFoundError(
-                        f"serviceAccountKey.json no encontrado en {current_dir}"
-                    )
-                
-                self.logger.info(f"Usando credenciales desde: {cred_path}")
-                cred = credentials.Certificate(cred_path)
+                # Inicializar Firebase Admin SDK
+                cred = service_account.Credentials.from_service_account_file(credentials_path)
                 firebase_admin.initialize_app(cred)
-                self.logger.info("Firebase initialized successfully")
+                
+                self.logger.info('Firebase inicializado correctamente')
+            else:
+                self.logger.info('Firebase ya estaba inicializado')
         except Exception as e:
             self.logger.error(f"Failed to initialize Firebase: {e}")
             raise
