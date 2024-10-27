@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/970385485903091377/c74b9c9279ac46a78cbe241ad65710af/artifacts
+end_time: 1730049575325
+entry_point_name: ''
+experiment_id: '970385485903091377'
+lifecycle_stage: active
+run_id: c74b9c9279ac46a78cbe241ad65710af
+run_name: carefree-sheep-125
+run_uuid: c74b9c9279ac46a78cbe241ad65710af
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1730049571300
+status: 3
+tags: []
+user_id: Alberto

@@ -18,7 +18,13 @@ from BBDD.database import FirebaseInitializer
 
 load_dotenv()
 
-mlflow.set_tracking_uri('http://mlflow:5000')
+workspace_name = "<your_workspace_name>"
+resource_group = "<your_resource_group>"
+subscription_id = "<your_subscription_id>"
+
+ws = Workspace.get(name=workspace_name, resource_group=resource_group, subscription_id=subscription_id)
+mlflow.set_tracking_uri(ws.get_mlflow_tracking_uri())
+mlflow.set_experiment("stroke_prediction_xgboost")
 mlflow.set_experiment('stroke_prediction_xgboost')
 
 class XGBoostStrokeModel:
@@ -204,8 +210,6 @@ class XGBoostStrokeModel:
             mlflow.log_metric("roc_auc", roc_auc)
             
             mlflow.sklearn.log_model(self.model, "model")
-            
-            self.log_plots(X_test, y_test)
             
         return X_test, y_test
 

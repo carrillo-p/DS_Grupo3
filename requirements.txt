@@ -4,6 +4,7 @@ altair==5.4.1
 asttokens==2.4.1
 astunparse==1.6.3
 attrs==24.2.0
+azureml-core==1.58.0 
 blinker==1.8.2
 cachetools==5.5.0
 catboost==1.2.7
