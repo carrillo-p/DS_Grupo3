@@ -15,16 +15,16 @@ from threading import Thread
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from BBDD.database import FirebaseInitializer
+from azureml.core import Workspace
 
 load_dotenv()
 
-workspace_name = "<your_workspace_name>"
-resource_group = "<your_resource_group>"
-subscription_id = "<your_subscription_id>"
+workspace_name = "MLFlow1"
+resource_group = "Predictus"
+subscription_id = "Azure subscription 1"
 
 ws = Workspace.get(name=workspace_name, resource_group=resource_group, subscription_id=subscription_id)
 mlflow.set_tracking_uri(ws.get_mlflow_tracking_uri())
-mlflow.set_experiment("stroke_prediction_xgboost")
 mlflow.set_experiment('stroke_prediction_xgboost')
 
 class XGBoostStrokeModel:
