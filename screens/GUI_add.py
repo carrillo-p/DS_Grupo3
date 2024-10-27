@@ -4,12 +4,20 @@ import pandas as pd
 import numpy as np
 from src.model.train_models_XGBoost import XGBoostStrokeModel
 from screens.aux_functions import create_gauge_chart, load_css, load_image
-from BBDD.database_utils import get_database_connection
-from BBDD.models import ModelMetrics, PatientData
+from firebase_admin import firestore
+from BBDD.database import FirebaseInitializer
 import tensorflow as tf
 import pickle
 from threading import Thread 
 from src.model.mlflow_xgboost import XGBoostStrokeModel, background_worker
+from dotenv import load_dotenv
+from datetime import datetime
+
+load_dotenv()
+
+# Initialize Firebase
+firebase_init = FirebaseInitializer()
+db = firebase_init.db
 
 @st.cache_resource
 def load_model():
@@ -30,6 +38,72 @@ def transform_to_woe(df, woe_dict):
         df_woe[col] = df_woe[col].map(woe_map)
     return df_woe
 
+def save_prediction_to_firebase(data):
+    try:
+        # Añadir timestamp
+        data['timestamp'] = datetime.now()
+        
+        # Crear nueva referencia en la colección
+        db.collection('new_data').add(data)
+        print("Prediction saved to Firebase successfully")
+        return True
+    except Exception as e:
+        print(f"Error saving to Firebase: {e}")
+        return False
+
+def convert_gender(gender_es):
+    return "Male" if gender_es == "Masculino" else "Female"
+
+def convert_work_type(work_type_es):
+    mapping = {
+        "Privado": "Private",
+        "Autónomo": "Self-employed",
+        "Gubernamental": "Govt_job",
+        "Niño": "children",
+        "Nunca ha trabajado": "Never_worked"
+    }
+    return mapping[work_type_es]
+
+def convert_smoking_status(smoking_es):
+    mapping = {
+        "Nunca fumó": "never smoked",
+        "Fumador": "smokes",
+        "Exfumador": "formerly smoked"
+    }
+    return mapping[smoking_es]
+
+def convert_yes_no(value_es):
+    return "Yes" if value_es == "Sí" else "No"
+
+def convert_residence_type(residence_es):
+    return "Urban" if residence_es == "Urbana" else "Rural"
+
+def get_bmi_category(bmi):
+    if bmi < 18.5:
+        return "Underweight"
+    elif bmi < 25:
+        return "Normal"
+    elif bmi < 30:
+        return "Overweight"
+    else:
+        return "Obese"
+
+def get_age_category(age):
+    if age < 35:
+        return "Young"
+    elif age < 60:
+        return "Middle"
+    else:
+        return "Elderly"
+
+def get_glucose_category(glucose):
+    if glucose < 100:
+        return "Normal"
+    elif glucose < 126:
+        return "Pre-diabetes"
+    else:
+        return "Diabetes"
+    
 
 xgb_model, dict_woe = load_model()
 nn_model, nn_scaler = load_nn_model()
@@ -68,38 +142,27 @@ def screen_add():
         stroke = st.selectbox("Ictus", ["No", "Sí"])
 
     if st.button("Añadir nuevo caso a la base de datos."):
+        patient_data = {
+            "age": age,
+            "gender": convert_gender(gender),
+            "hypertension": 1 if hypertension == "Sí" else 0,
+            "heart_disease": 1 if heart_disease == "Sí" else 0,
+            "ever_married": convert_yes_no(ever_married),
+            "work_type": convert_work_type(work_type),
+            "Residence_type": convert_residence_type(residence_type),
+            "smoking_status": convert_smoking_status(smoking_status),
+            "bmi_category": get_bmi_category(bmi),
+            "age_category": get_age_category(age),
+            "glucose_level_category": get_glucose_category(avg_glucose_level),
+            "stroke": 1 if stroke == "Sí" else 0  # Convertir a valor numérico
+        }
 
-        session = get_database_connection()
-        try:
-            bd_inputs = PatientData(
-                age=age,
-                gender=1 if gender == "Masculino" else 0,
-                hypertension=1 if hypertension == "Sí" else 0,
-                heart_disease=1 if heart_disease == "Sí" else 0,
-                ever_married=1 if ever_married == "Sí" else 0,
-                work_type=0 if work_type == "Privado" else 1 if work_type == "Autónomo" else 2 if work_type == "Gubernamental" else 3 if work_type == "Niño" else 4,
-                Residence_type=1 if residence_type == "Urbana" else 0,
-                smoking_status=0 if smoking_status == "Nunca fumó" else 1 if smoking_status == "Exfumador" else 2,
-                bmi_category=0 if bmi < 18.5 else 1 if bmi < 25 else 2 if bmi < 30 else 3,
-                age_category=0 if age < 13 else 1 if age < 18 else 2 if age < 60 else 3,
-                glucose_level_category=0 if avg_glucose_level < 100 else 1 if avg_glucose_level < 140 else 2,
-                stroke = 1 if stroke == "Sí" else 0
-            )
+        if save_prediction_to_firebase(patient_data):
+            st.success("Los datos han sido añadidos exitosamente a la base de datos.")
+        else:
+            st.error("Hubo un error al guardar los datos. Por favor, intente nuevamente.")
 
-            session.add(bd_inputs)
-            session.commit()
-            print("Datos enviados a la base de datos")
-        except Exception as e:
-            # Si ocurre un error, revertir la transacción
-            session.rollback()
-            print(f"Error al insertar nuevos datos: {e}")
-        finally:
-        # Cerrar la sesión
-            session.close()
-
-        st.success("Los datos han sido añadidos exitosamente a la base de datos.")
-
-        # Pie de página
+    # Pie de página
     st.markdown('---')
     st.markdown('<p style="color: white;">© 2024 PREDICTUS - Tecnología Avanzada para la Prevención de Ictus. Todos los derechos reservados.</p>', unsafe_allow_html=True)
 

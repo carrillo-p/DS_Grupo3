@@ -4,7 +4,8 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy.stats import ks_2samp
 from screens.aux_functions import load_css, load_image
-from BBDD.database_utils import get_database_connection
+from firebase_admin import firestore
+from BBDD.database import FirebaseInitializer
 
 def calculate_metrics(prediction, probabilities, reference_data):
     avg_prediction = np.mean(probabilities)
@@ -30,6 +31,26 @@ def plot_prediction_distribution(predictions):
     fig.update_layout(title='Distribución de Predicciones', xaxis_title='Probabilidad', yaxis_title='Frecuencia')
     return fig
 
+def get_firebase_data(collection_name, limit=None, order_by='timestamp', descending=True):
+    """Función auxiliar para obtener datos de Firebase y convertirlos a DataFrame"""
+    firebase = FirebaseInitializer()
+    collection_ref = firebase.db.collection(collection_name)
+    
+    # Crear la consulta base
+    query = collection_ref.order_by(order_by, direction=firestore.Query.DESCENDING if descending else firestore.Query.ASCENDING)
+    
+    if limit:
+        query = query.limit(limit)
+    
+    # Ejecutar la consulta y convertir a DataFrame
+    docs = query.stream()
+    data = [doc.to_dict() for doc in docs]
+    
+    if not data:
+        return pd.DataFrame()
+    
+    return pd.DataFrame(data)
+
 def screen_informe():
     load_css('style.css')
 
@@ -43,16 +64,12 @@ def screen_informe():
     st.markdown('<h1 class="big-font">Predictor de Ictus</h1>', unsafe_allow_html=True)
     st.markdown('<p class="medium-font">Métricas de rendimiento del modelo</p>', unsafe_allow_html=True)
 
-    session = get_database_connection()
-
-    # Cargar el historial de métricas de la base de datos
-
     try:
 
-        metrics_history = pd.read_sql('SELECT * FROM model_metrics ORDER BY timestamp', session.bind)
+        metrics_history = get_firebase_data('model_metrics', limit = 1000)
 
         if not metrics_history.empty:
-            latest_metrics = metrics_history.iloc[-1]
+            latest_metrics = metrics_history.iloc[0]
             st.metric("Predicción promedio", f"{latest_metrics['avg_prediction']:.4f}")
             st.metric("Entropía", f"{latest_metrics['entropy']:.4f}")
             st.metric("Estadístico KS", f"{latest_metrics['ks_statistic']:.4f}")
@@ -84,17 +101,16 @@ def screen_informe():
 
         st.markdown('<p class="medium-font">Distribución de Predicciones Recientes</p>', unsafe_allow_html=True)
 
-        recent_predictions = pd.read_sql_query(
-            'SELECT prediction_probability FROM patient_predictions ORDER BY timestamp DESC LIMIT 1000', 
-            session.bind
-        )
+        recent_predictions = get_firebase_data('patient_predictions', limit=1000)
+        
         if not recent_predictions.empty:
             fig_dist = plot_prediction_distribution(recent_predictions['prediction_probability'])
             st.plotly_chart(fig_dist)
         else:
             st.warning("No hay datos de predicciones recientes disponibles.")
-    finally:
-        session.close()
+            
+    except Exception as e:
+        st.error(f"Error al cargar datos: {str(e)}")
 
 if __name__ == "__main__":
     screen_informe()

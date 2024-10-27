@@ -13,9 +13,8 @@ import mlflow.sklearn
 import time
 from threading import Thread
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, MetaData, Table
-from sqlalchemy.orm import sessionmaker
-import pymysql
+from datetime import datetime, timedelta
+from BBDD.database import FirebaseInitializer
 
 load_dotenv()
 
@@ -32,50 +31,124 @@ class XGBoostStrokeModel:
             self.initial_training_file = 'initial_training_done.txt'
             self.check_interval = int(os.getenv('CHECK_INTERVAL', 3600))
             self.csv_path = csv_path
+            
+            # Inicializar Firebase
+            firebase_init = FirebaseInitializer()
+            self.db = firebase_init.db
+            self.logger = firebase_init.logger
+            self.schema = firebase_init.FIREBASE_SCHEMA['new_data']
+            
             self.db_config = {
-                'host': os.getenv('DB_HOST', 'mysql'),
-                'user': os.getenv('DB_USER'),
-                'password': os.getenv('DB_PASSWORD'),
-                'database': os.getenv('DB_NAME'),
-                'table': os.getenv('DB_TABLE', 'new_data')
+                'collection': 'new_data',
+                'batch_size': int(os.getenv('FIRESTORE_BATCH_SIZE', '1000')),
+                'cache_duration': int(os.getenv('FIRESTORE_CACHE_DURATION', '300'))
             }
-            self.engine = self.create_db_engine()
+            self._cached_data = None
+            self._last_cache_time = None
         elif model_path and scaler_path:
             self.model = joblib.load('src/model/xgboost_model.joblib')
             self.scaler = joblib.load('src/model/xgb_scaler.joblib')
-
-    def create_db_engine(self):
-        db_uri = f"mysql+pymysql://{self.db_config['user']}:{self.db_config['password']}@{self.db_config['host']}/{self.db_config['database']}"
-        return create_engine(db_uri)
 
     def load_data_from_csv(self):
         try:
             df = pd.read_csv(self.csv_path)
             self.feature_names = df.drop('stroke', axis=1).columns
-            print(f"Datos cargados desde CSV. Número de filas: {len(df)}")
+            self.logger.info(f"Datos cargados desde CSV. Número de filas: {len(df)}")
             return df
         except Exception as e:
-            print(f"Error al cargar datos desde CSV: {e}")
+            self.logger.error(f"Error al cargar datos desde CSV: {e}")
             return pd.DataFrame()
 
-    def load_data_from_mysql(self):
+    def _should_refresh_cache(self):
+        if self._last_cache_time is None:
+            return True
+        cache_age = datetime.now() - self._last_cache_time
+        return cache_age.total_seconds() > self.db_config['cache_duration']
+
+    def load_data_from_firestore(self):
         try:
-            metadata = MetaData()
-            table = Table(self.db_config['table'], metadata, autoload_with=self.engine)
-            Session = sessionmaker(bind=self.engine)
-            session = Session()
-            query = session.query(table)
-            df = pd.read_sql(query.statement, self.engine)
-            self.feature_names = df.drop('stroke', axis=1).columns
-            print(f"Datos cargados desde MySQL. Número de filas: {len(df)}")
+            # Check if we can use cached data
+            if not self._should_refresh_cache() and self._cached_data is not None:
+                self.logger.info("Usando datos en caché")
+                return self._cached_data
+
+            self.logger.info("Cargando datos desde Firestore...")
+            collection_ref = self.db.collection(self.db_config['collection'])
+            
+            # Get total document count first (excluding _metadata document)
+            query = collection_ref.where('__name__', '!=', '_metadata')
+            total_docs = len(list(query.limit(1).get()))
+            
+            if total_docs == 0:
+                return pd.DataFrame()
+
+            # Fetch documents in batches
+            all_docs = []
+            batch_size = self.db_config['batch_size']
+            last_doc = None
+
+            while True:
+                if last_doc:
+                    query = collection_ref.where('__name__', '!=', '_metadata')\
+                                       .limit(batch_size)\
+                                       .start_after(last_doc)
+                else:
+                    query = collection_ref.where('__name__', '!=', '_metadata')\
+                                       .limit(batch_size)
+
+                docs = list(query.get())
+                if not docs:
+                    break
+
+                # Validar cada documento contra el esquema
+                for doc in docs:
+                    doc_dict = doc.to_dict()
+                    if self._validate_document(doc_dict):
+                        all_docs.append(doc_dict)
+                
+                last_doc = docs[-1]
+                self.logger.info(f"Cargados {len(all_docs)} documentos de {total_docs}")
+
+            df = pd.DataFrame(all_docs)
+            
+            if not df.empty:
+                self.feature_names = df.drop('stroke', axis=1).columns
+                
+                # Cache the results
+                self._cached_data = df
+                self._last_cache_time = datetime.now()
+                
+                self.logger.info(f"Datos cargados desde Firestore. Número de filas: {len(df)}")
             return df
+
         except Exception as e:
-            print(f"Error al cargar datos desde MySQL: {e}")
+            self.logger.error(f"Error al cargar datos desde Firestore: {e}")
             return pd.DataFrame()
+
+    def _validate_document(self, doc_dict):
+        """Valida un documento contra el esquema definido"""
+        required_fields = set(self.schema['fields'].keys())
+        doc_fields = set(doc_dict.keys())
+        
+        # Verificar campos requeridos
+        if not required_fields.issubset(doc_fields):
+            missing_fields = required_fields - doc_fields
+            self.logger.warning(f"Campos faltantes en el documento: {missing_fields}")
+            return False
+        
+        # Validar tipos y valores permitidos
+        for field, field_type in self.schema['fields'].items():
+            value = doc_dict.get(field)
+            if field in self.schema.get('validations', {}):
+                if value not in self.schema['validations'][field]:
+                    self.logger.warning(f"Valor no válido para {field}: {value}")
+                    return False
+                    
+        return True
 
     def preprocess_data(self, df):
         if df.empty:
-            print("El DataFrame está vacío")
+            self.logger.warning("El DataFrame está vacío")
             return None, None
         else:
             if 'stroke' in df.columns:
@@ -88,11 +161,8 @@ class XGBoostStrokeModel:
                     X_scaled = self.scaler.transform(X)
                 return X_scaled, y
             else:
-                print("La columna 'stroke' no está presente en el DataFrame")
-            # Manejar el error apropiadamente, por ejemplo:
+                self.logger.error("La columna 'stroke' no está presente en el DataFrame")
             return None, None
-        
-        
 
     def train_model(self, X, y):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -138,40 +208,6 @@ class XGBoostStrokeModel:
             self.log_plots(X_test, y_test)
             
         return X_test, y_test
-    
-    def log_plots(self, X_test, y_test):
-        # Generar y registrar la curva ROC
-        y_test_pred_proba = self.model.predict_proba(X_test)[:, 1]
-        fpr, tpr, _ = roc_curve(y_test, y_test_pred_proba)
-        roc_auc = auc(fpr, tpr)
-
-        plt.figure(figsize=(8, 6))
-        plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {roc_auc:.4f})', color='darkorange', lw=2)
-        plt.plot([0, 1], [0, 1], color='navy', linestyle='--')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('Receiver Operating Characteristic (ROC) Curve')
-        plt.legend(loc="lower right")
-        plt.grid(True)
-        plt.savefig('roc_curve.png')
-        plt.close()
-        mlflow.log_artifact('roc_curve.png')
-
-        # Generar y registrar la importancia de las características
-        importance = self.model.feature_importances_
-        importance_df = pd.DataFrame({
-            'Feature': self.feature_names,
-            'Importance': importance
-        }).sort_values(by='Importance', ascending=False)
-
-        plt.figure(figsize=(10, 8))
-        sns.barplot(x='Importance', y='Feature', data=importance_df)
-        plt.title('Feature Importance')
-        plt.savefig('feature_importance.png')
-        plt.close()
-        mlflow.log_artifact('feature_importance.png')
 
     def initial_training(self):
         if not os.path.exists(self.initial_training_file):
@@ -189,7 +225,7 @@ class XGBoostStrokeModel:
     def check_and_retrain(self):
         if self.should_check():
             print("Verificando condiciones para reentrenamiento...")
-            df = self.load_data_from_mysql()
+            df = self.load_data_from_firestore()
             
             if len(df) > int(os.getenv('RETRAIN_THRESHOLD', 10000)):
                 print("Condiciones cumplidas. Iniciando reentrenamiento...")
