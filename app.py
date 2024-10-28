@@ -6,9 +6,8 @@ import os
 
 import streamlit as st
 
-def main():
-    st.title("Test App")
-    st.write("Hello World!")
+app = FastAPI()
 
-if __name__ == "__main__":
-    main()
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
