@@ -4,17 +4,27 @@ from threading import Thread
 from azureml.core import Workspace
 from src.model.mlflow_xgboost import XGBoostStrokeModel, background_worker
 
-workspace_name = "<your_workspace_name>"
-resource_group = "<your_resource_group>"
-subscription_id = "<your_subscription_id>"
+@st.cache_resource  # Usar cache para el modelo
+def initialize_model():
+    workspace_name = "<your_workspace_name>"
+    resource_group = "<your_resource_group>"
+    subscription_id = "<your_subscription_id>"
+    
+    ws = Workspace.get(
+        name=workspace_name,
+        resource_group=resource_group,
+        subscription_id=subscription_id
+    )
+    
+    mlflow.set_tracking_uri(ws.get_mlflow_tracking_uri())
+    mlflow.set_experiment('stroke_prediction_xgboost')
+    
+    model = XGBoostStrokeModel(csv_path='src/Data/train_stroke_woe_smote.csv')
+    model.initial_training()
+    return model
 
-ws = Workspace.get(name=workspace_name, resource_group=resource_group, subscription_id=subscription_id)
-mlflow.set_tracking_uri(ws.get_mlflow_tracking_uri())
-mlflow.set_experiment('stroke_prediction_xgboost')
-
-# Inicialización del modelo
-model = XGBoostStrokeModel(csv_path='src/Data/train_stroke_woe_smote.csv')
-model.initial_training()
+# Inicializar el modelo
+model = initialize_model()
 
 bg_thread = Thread(target=background_worker, args=(model,))
 bg_thread.start()
