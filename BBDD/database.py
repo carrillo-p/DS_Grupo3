@@ -117,7 +117,7 @@ class FirebaseInitializer:
         }
     }
 
-    def validate_data(self, collection_name: "string", data: dict) -> bool:
+    def validate_data(self, collection_name: str, data: dict) -> bool:
         """Valida los datos contra el esquema definido"""
         if collection_name not in self.FIREBASE_SCHEMA:
             return False

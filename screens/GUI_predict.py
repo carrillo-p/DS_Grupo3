@@ -6,12 +6,9 @@ from src.model.train_models_XGBoost import XGBoostStrokeModel
 from screens.aux_functions import create_gauge_chart, load_css, load_image
 import tensorflow as tf
 import pickle
-from firebase_admin import firestore
 import datetime
 from BBDD.database import FirebaseInitializer
-from pathlib import Path
 from dotenv import load_dotenv
-import os
 
 # Load environment variables
 load_dotenv()

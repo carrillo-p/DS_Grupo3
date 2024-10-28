@@ -1,10 +1,7 @@
 import streamlit as st
 import joblib
-import pandas as pd
-import numpy as np
 from src.model.train_models_XGBoost import XGBoostStrokeModel
 from screens.aux_functions import create_gauge_chart, load_css, load_image
-from firebase_admin import firestore
 from BBDD.database import FirebaseInitializer
 import tensorflow as tf
 import pickle
