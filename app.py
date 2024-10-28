@@ -4,17 +4,11 @@ import streamlit.web.bootstrap as bootstrap
 import streamlit as st
 import os
 
-app = FastAPI()
+import streamlit as st
 
-# Configurar la aplicación Streamlit
-def run_streamlit():
-    bootstrap.run("main.py", "", [], {})
-
-# Envolver Streamlit en FastAPI
-@app.get("/")
-def read_root():
-    return WSGIMiddleware(run_streamlit)
+def main():
+    st.title("Test App")
+    st.write("Hello World!")
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    main()
