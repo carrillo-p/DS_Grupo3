@@ -14,6 +14,12 @@ from dotenv import load_dotenv
 from datetime import datetime
 from BBDD.database import FirebaseInitializer
 from azureml.core import Workspace
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 load_dotenv()
 
@@ -21,9 +27,12 @@ workspace_name = "MLFlow1"
 resource_group = "Predictus"
 subscription_id = "Azure subscription 1"
 
-ws = Workspace.get(name=workspace_name, resource_group=resource_group, subscription_id=subscription_id)
-mlflow.set_tracking_uri(ws.get_mlflow_tracking_uri())
-mlflow.set_experiment('stroke_prediction_xgboost')
+try:
+    ws = Workspace.get(name=workspace_name, resource_group=resource_group, subscription_id=subscription_id)
+    mlflow.set_tracking_uri(ws.get_mlflow_tracking_uri())
+    mlflow.set_experiment('stroke_prediction_xgboost')
+except Exception as e:
+    logging.error(f"Error al configurar MLFlow: {e}")
 
 class XGBoostStrokeModel:
     def __init__(self, csv_path=None, model_path=None, scaler_path=None):

@@ -6,17 +6,41 @@ import os
 import time
 from threading import Thread
 from src.model.train_models_XGBoost import XGBoostStrokeModel
+import logging
+from pathlib import Path
 
 app = FastAPI()
 
 def initialize_model():
-    model = XGBoostStrokeModel(csv_path='src/Data/train_stroke_woe_smote.csv')
-    model.initial_training()
+    global model
+    
+    # Crear directorio para modelos si no existe
+    model_dir = Path('src/model')
+    model_dir.mkdir(parents=True, exist_ok=True)
+    
+    model_path = model_dir / 'xgboost_model.joblib'
+    scaler_path = model_dir / 'xgb_scaler.joblib'
+    
+    try:
+        if model_path.exists() and scaler_path.exists():
+            logging.info("Cargando modelo pre-entrenado...")
+            model = XGBoostStrokeModel(model_path=str(model_path), scaler_path=str(scaler_path))
+        else:
+            logging.info("Entrenando nuevo modelo...")
+            model = XGBoostStrokeModel(csv_path='src/Data/train_stroke_woe_smote.csv')
+            model.initial_training()
+    except Exception as e:
+        logging.error(f"Error en la inicialización del modelo: {e}")
+        raise
+    
     return model
 
 def background_worker(model):
     while True:
-        model.check_and_retrain()
+        try:
+            model.check_and_retrain()
+        except Exception as e:
+            logging.error(f"Error en el worker de reentrenamiento: {e}")
         time.sleep(model.check_interval)
 
 def run_streamlit():
@@ -89,5 +113,11 @@ streamlit_app = bootstrap.run(
 app.mount("/", WSGIMiddleware(streamlit_app))
 
 if __name__ == "__main__":
+    # Configurar logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))

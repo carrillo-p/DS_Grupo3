@@ -1,1 +1,1 @@
-gunicorn --timeout 600 --access-logfile - --error-logfile - --bind=0.0.0.0:8000 --worker-class=uvicorn.workers.UvicornWorker app:app
++gunicorn --timeout 1800 --workers 2 --threads 4 --access-logfile - --error-logfile - --bind=0.0.0.0:8000 --worker-class=uvicorn.workers.UvicornWorker app:app
