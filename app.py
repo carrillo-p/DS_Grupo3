@@ -26,14 +26,12 @@ def initialize_model():
             logging.info("Cargando modelo pre-entrenado...")
             model = XGBoostStrokeModel(model_path=str(model_path), scaler_path=str(scaler_path))
         else:
-            logging.info("Entrenando nuevo modelo...")
-            model = XGBoostStrokeModel(csv_path='src/Data/train_stroke_woe_smote.csv')
-            model.initial_training()
+            logging.warning("No se encontró modelo pre-entrenado. El entrenamiento en B1 no es recomendado.")
+            raise Exception("Se requiere un modelo pre-entrenado para B1")
     except Exception as e:
         logging.error(f"Error en la inicialización del modelo: {e}")
         raise
-    
-    return model
+
 
 def background_worker(model):
     while True:

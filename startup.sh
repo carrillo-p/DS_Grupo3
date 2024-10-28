@@ -1,1 +1,1 @@
-+gunicorn --timeout 1800 --workers 2 --threads 4 --access-logfile - --error-logfile - --bind=0.0.0.0:8000 --worker-class=uvicorn.workers.UvicornWorker app:app
+gunicorn --timeout 1800 --workers 1 --threads 2 --access-logfile - --error-logfile - --bind=0.0.0.0:8000 --worker-class=uvicorn.workers.UvicornWorker --worker-tmp-dir /dev/shm app:app
