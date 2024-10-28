@@ -1,6 +1,6 @@
 import streamlit as st
 from pathlib import Path
-from src.model.xgboost_model import XGBoostStrokeModel
+from src.model.mlflow_xgboost import XGBoostStrokeModel
 
 @st.cache_resource  # Cache del modelo para evitar recargas innecesarias
 def initialize_model():
