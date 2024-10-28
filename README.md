@@ -10,7 +10,7 @@ Predictus es una aplicación web innovadora que utiliza inteligencia artificial 
 En este contexto, **Predictus** proporciona una solución integral. Desarrollada con **Streamlit**, nuestra aplicación analiza los datos de salud de los pacientes mediante modelos avanzados, como **XGBoost** y redes neuronales, para detectar factores de riesgo de ictus de manera automatizada. Incluye también un modelo de redes neuronales convolucionales diseñado específicamente para detectar ictus en imágenes en cuestión de segundos, brindando un soporte adicional en el diagnóstico temprano.
 
 <div style="text-align: center;">
-- [Acceder a la presentación](https://www.canva.com/design/DAGULhwfx50/m4lB0cxJSt169PW5N46-sw/edit?utm_content=DAGULhwfx50&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+  <a href="https://www.canva.com/design/DAGULhwfx50/m4lB0cxJSt169PW5N46-sw/edit?utm_content=DAGULhwfx50&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: white; background-color: #007bff; border-radius: 5px; text-decoration: none;">Acceder a la presentación</a>
 </div>
 
 ---
