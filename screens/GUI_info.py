@@ -1,6 +1,4 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 from scipy.stats import ks_2samp
 from screens.aux_functions import load_css, load_image
