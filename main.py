@@ -3,26 +3,27 @@ import mlflow
 from threading import Thread
 from azureml.core import Workspace
 from src.model.mlflow_xgboost import XGBoostStrokeModel, background_worker
+from pathlib import Path
 
 @st.cache_resource  # Usar cache para el modelo
 def initialize_model():
-    workspace_name = "<your_workspace_name>"
-    resource_group = "<your_resource_group>"
-    subscription_id = "<your_subscription_id>"
+    global model
     
-    ws = Workspace.get(
-        name=workspace_name,
-        resource_group=resource_group,
-        subscription_id=subscription_id
-    )
+    # Crear directorio para modelos si no existe
+    model_dir = Path('src/model')
+    model_dir.mkdir(parents=True, exist_ok=True)
     
-    mlflow.set_tracking_uri(ws.get_mlflow_tracking_uri())
-    mlflow.set_experiment('stroke_prediction_xgboost')
+    model_path = model_dir / 'xgboost_model.joblib'
+    scaler_path = model_dir / 'xgb_scaler.joblib'
     
-    model = XGBoostStrokeModel(csv_path='src/Data/train_stroke_woe_smote.csv')
-    model.initial_training()
-    return model
-
+    try:
+        if model_path.exists() and scaler_path.exists():
+            model = XGBoostStrokeModel(model_path=str(model_path), scaler_path=str(scaler_path))
+        else:
+            raise Exception("Se requiere un modelo pre-entrenado para B1")
+    except Exception as e:
+        raise
+    
 # Inicializar el modelo
 model = initialize_model()
 
