@@ -21,7 +21,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: 'pip'
 
       - name: Create and start virtual environment
         run: |
@@ -29,19 +28,12 @@ jobs:
           source venv/bin/activate
       
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install wheel setuptools
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
+        
+      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip artifact for deployment
-        run: |
-          zip release.zip ./* -r \
-          !venv/ \
-          !__pycache__/ \
-          !*.pyc \
-          !.git/ \
-          !.github/
+        run: zip release.zip ./* -r
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
@@ -73,9 +65,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_37BF5F1A54A047F294F306BFD7A76F09 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_89261F06CD054E32869ACC5B2A36F56E }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F32138857A2C4552B96A1FDABF09A311 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_C2133A3F56564DDFAFA14512ADF34DFE }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C7E83D24AC694C4591F104F7E3466911 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_952DCCDA695A42DC8F0EFBE67CAF9A0E }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
