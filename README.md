@@ -68,5 +68,5 @@ Coloca el archivo descargado `nn_stroke_img.keras` en el directorio `src/model` 
 Para iniciar el entorno Docker, asegúrate de estar en el directorio raíz del proyecto y ejecuta el siguiente comando:
 
 ```bash
-docker-compose up
+docker-compose up --build
 ```
