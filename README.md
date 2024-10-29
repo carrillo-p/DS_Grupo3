@@ -78,7 +78,7 @@ docker-compose up --build
 Dev es la rama principal con todo el código configurado para poder replicar la aplicación con docker localmente.
 
 ### Server_Google
-Presenta la estructura de datos que hay que seguir para subir la aplicación a la nube de Google. Incluye menos funcionalidades para permitir trabajar en los tiers gratuitos con mayor facilidad (que no bien)
+Presenta la estructura de datos que hay que seguir para subir la aplicación a la nube de Google. Incluye menos funcionalidades para permitir trabajar en los tiers gratuitos con mayor facilidad (que no bien). Para funcionar requiere credenciales de entorno local.
 
 ### bbdd-firestore
 Igual que la rama dev pero con la diferencia de que la base de datos que utiliza es una base de datos en firebase de google. No se puede utilizar localmente ya que necesitaría de las credenciales de google para funcionar, pero se mantiene para ejemplificar como se trabajaría con ese tipo de base de datos.
