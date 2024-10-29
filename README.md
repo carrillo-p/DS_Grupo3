@@ -70,3 +70,18 @@ Para iniciar el entorno Docker, asegúrate de estar en el directorio raíz del p
 ```bash
 docker-compose up --build
 ```
+
+---
+
+## Guía de ramas
+### dev
+Dev es la rama principal con todo el código configurado para poder replicar la aplicación con docker localmente.
+
+### Server_Google
+Presenta la estructura de datos que hay que seguir para subir la aplicación a la nube de Google. Incluye menos funcionalidades para permitir trabajar en los tiers gratuitos con mayor facilidad (que no bien)
+
+### bbdd-firestore
+Igual que la rama dev pero con la diferencia de que la base de datos que utiliza es una base de datos en firebase de google. No se puede utilizar localmente ya que necesitaría de las credenciales de google para funcionar, pero se mantiene para ejemplificar como se trabajaría con ese tipo de base de datos.
+
+### MLFlow Azure
+Igual que la rama bbdd-firestore pero incluye la estrucutra para utilizar MLFlow desde azure. Tampoco se puede utilizar localmente ya que necesitaría las credenciales de Azure para funcionar, se mantiene pare ejemplificar como se trabaja en Azure.
